@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+	@apply bg-muted font-sans text-text;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	@apply font-bold text-text;
+}
+
+.card {
+	@apply bg-card rounded-2xl border border-border shadow-sm p-6;
+}
+
+.sidebar {
+	@apply bg-primary text-white w-64 min-h-screen flex flex-col justify-between shrink-0;
+}
+
+.sidebar-active {
+	@apply bg-accent text-primary font-semibold;
+}
+
+.sidebar-link {
+	@apply flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm hover:bg-secondary hover:text-white;
+}
