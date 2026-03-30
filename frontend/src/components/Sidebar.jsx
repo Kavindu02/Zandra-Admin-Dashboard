@@ -1,4 +1,4 @@
-// import React from 'react';
+//
 import { 
   LayoutDashboard, Bell, AlarmClock, Plane, 
   TrendingUp, Ticket, FileText, Calendar, 
@@ -26,13 +26,30 @@ const menuGroups = [
   },
 ];
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 export default function Sidebar() {
-  // Track the active menu item by label
-  const [active, setActive] = useState('Dashboard');
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Reverse map: route -> label
+  const routeToLabel = Object.entries({
+    'Dashboard': '/',
+    'Notifications': '/notifications',
+    'Reminders': '/reminders',
+    'Customers & Flights': '/customers-flights',
+    'Profit Tracker': '/profit-tracker',
+    'Issue Ticket': '/issue-ticket',
+    'Invoice Generator': '/invoice-generator',
+    'Flight Calendar': '/flight-calendar',
+  }).reduce((acc, [label, path]) => {
+    acc[path] = label;
+    return acc;
+  }, {});
+
+  // Find the label for the current path
+  const activeLabel = routeToLabel[location.pathname] || 'Dashboard';
 
   // Map label to route
   const routeMap = {
@@ -71,13 +88,12 @@ export default function Sidebar() {
                 {group.items.map((item) => (
                   <li key={item.label}>
                     <button
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm ${
-                        active === item.label
-                          ? 'bg-[#233366] text-white font-semibold'
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all text-sm ${
+                        activeLabel === item.label
+                          ? 'bg-[#F3A91B] text-[#101D42] font-bold'
                           : 'hover:bg-[#1e2e5a] hover:text-white'
                       }`}
                       onClick={() => {
-                        setActive(item.label);
                         if (routeMap[item.label]) {
                           navigate(routeMap[item.label]);
                         }
