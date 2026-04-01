@@ -1,14 +1,16 @@
 
 import React from 'react';
 import Sidebar from '../components/Sidebar';
+import TopHeaderActions from '../components/TopHeaderActions';
 
 export default function FlightCalendar() {
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    <div className="flex min-h-screen bg-[#E5E7EB]">
       <Sidebar />
       <div className="flex-1 ml-64">
-        <div className="h-16 bg-white border-b border-gray-100 flex items-center px-8">
+        <div className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8">
           <h2 className="font-bold text-gray-800">Flight Calendar</h2>
+          <TopHeaderActions />
         </div>
         <div className="p-8">
           <div className="bg-white rounded-2xl p-8 shadow-sm max-w-4xl mx-auto">
