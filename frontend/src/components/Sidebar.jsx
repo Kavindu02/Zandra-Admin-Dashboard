@@ -20,7 +20,7 @@ const menuGroups = [
       { label: 'Customers & Flights', icon: Plane },
       { label: 'Profit Tracker', icon: TrendingUp },
       { label: 'Issue Ticket', icon: Ticket },
-      { label: 'Invoice Generator', icon: FileText },
+      { label: 'PDF Generator', icon: FileText },
       { label: 'Flight Calendar', icon: Calendar },
     ]
   },
@@ -41,7 +41,7 @@ export default function Sidebar() {
     'Customers & Flights': '/customers-flights',
     'Profit Tracker': '/profit-tracker',
     'Issue Ticket': '/issue-ticket',
-    'Invoice Generator': '/invoice-generator',
+    'PDF Generator': '/invoice-generator',
     'Flight Calendar': '/flight-calendar',
   }).reduce((acc, [label, path]) => {
     acc[path] = label;
@@ -59,7 +59,7 @@ export default function Sidebar() {
     'Customers & Flights': '/customers-flights',
     'Profit Tracker': '/profit-tracker',
     'Issue Ticket': '/issue-ticket',
-    'Invoice Generator': '/invoice-generator',
+    'PDF Generator': '/invoice-generator',
     'Flight Calendar': '/flight-calendar',
   };
 

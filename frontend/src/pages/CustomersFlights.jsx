@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Plane, Search, Plus, Download, Eye, Edit2, Trash2, Mail } from 'lucide-react';
+import { Plane, Search, Plus, Download, Eye, Edit2, Trash2, Mail, MapPin } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 
@@ -21,6 +21,12 @@ export default function CustomersFlights() {
     to: '',
     departureDate: '',
     departureTime: '',
+    returnDate: '',
+    returnTime: '',
+    transitAirport: '',
+    transitTime: '',
+    outboundSecondFlightNo: '',
+    returnSecondFlightNo: '',
     airline: '',
     flightNo: '',
     class: 'Economy',
@@ -28,6 +34,9 @@ export default function CustomersFlights() {
     handledBy: '',
     notes: ''
   };
+
+  const tripTypeOptions = ['One Way', 'Round Trip', 'Multi City'];
+  const routeTypeOptions = ['Direct', 'Transit'];
 
   const normalizeCustomer = (customer) => {
     const tripType = customer.tripType || customer.route?.type?.split(' • ')[0] || 'One Way';
@@ -37,6 +46,13 @@ export default function CustomersFlights() {
     const departureDate = customer.departureDate || customer.departure?.split(' ')[0] || '';
     const departureTime = customer.departureTime || customer.departure?.split(' ')[1] || '';
     const departure = customer.departure || [departureDate, departureTime].filter(Boolean).join(' ');
+    const returnDate = customer.returnDate || customer.return?.split(' ')[0] || '';
+    const returnTime = customer.returnTime || customer.return?.split(' ')[1] || '';
+    const returnValue = customer.return || [returnDate, returnTime].filter(Boolean).join(' ');
+    const transitAirport = customer.transitAirport || '';
+    const transitTime = customer.transitTime || '';
+    const outboundSecondFlightNo = customer.outboundSecondFlightNo || '';
+    const returnSecondFlightNo = customer.returnSecondFlightNo || '';
 
     return {
       ...customer,
@@ -47,6 +63,13 @@ export default function CustomersFlights() {
       departureDate,
       departureTime,
       departure,
+      returnDate,
+      returnTime,
+      return: returnValue,
+      transitAirport,
+      transitTime,
+      outboundSecondFlightNo,
+      returnSecondFlightNo,
       route: customer.route || { from, to, type: `${tripType} • ${routeType}` },
       adults: Number(customer.adults) || 1
     };
@@ -75,10 +98,35 @@ export default function CustomersFlights() {
 
   const [activeTab, setActiveTab] = useState('Passenger');
   const [customerView, setCustomerView] = useState('all');
+  const hasReturnLeg = formData.tripType === 'Round Trip' || formData.tripType === 'Multi City';
+  const hasTransitRoute = formData.routeType === 'Transit';
   // Status filter dropdown
   const [statusFilter, setStatusFilter] = useState('All');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const handleTripTypeChange = (tripType) => {
+    setFormData((prev) => ({
+      ...prev,
+      tripType,
+      ...(tripType === 'One Way' ? { returnDate: '', returnTime: '' } : {})
+    }));
+  };
+
+  const handleRouteTypeChange = (routeType) => {
+    setFormData((prev) => ({
+      ...prev,
+      routeType,
+      ...(routeType !== 'Transit'
+        ? {
+            transitAirport: '',
+            transitTime: '',
+            outboundSecondFlightNo: '',
+            returnSecondFlightNo: ''
+          }
+        : {})
+    }));
+  };
 
   const emailCustomers = customers.filter((customer) => String(customer.email || '').trim());
 
@@ -390,6 +438,10 @@ export default function CustomersFlights() {
                                                 <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.pnr || '-'}</div>
                                               </div>
                                               <div>
+                                                <div className="text-gray-400 font-medium mb-1">STATUS</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.status || '-'}</div>
+                                              </div>
+                                              <div>
                                                 <div className="text-gray-400 font-medium mb-1">TRIP TYPE</div>
                                                 <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.tripType || (viewCustomer.route?.type?.split(' • ')[0] || '-')}</div>
                                               </div>
@@ -406,12 +458,36 @@ export default function CustomersFlights() {
                                                 <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.to || viewCustomer.route?.to || '-'}</div>
                                               </div>
                                               <div>
-                                                <div className="text-gray-400 font-medium mb-1">DEPARTURE</div>
-                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.departure || '-'}</div>
+                                                <div className="text-gray-400 font-medium mb-1">DEPARTURE DATE</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.departureDate || viewCustomer.departure?.split(' ')[0] || '-'}</div>
                                               </div>
                                               <div>
-                                                <div className="text-gray-400 font-medium mb-1">RETURN</div>
-                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.returnDate || '-'}</div>
+                                                <div className="text-gray-400 font-medium mb-1">DEPARTURE TIME</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.departureTime || viewCustomer.departure?.split(' ')[1] || '-'}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-gray-400 font-medium mb-1">RETURN DATE</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.returnDate || viewCustomer.return?.split(' ')[0] || '-'}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-gray-400 font-medium mb-1">RETURN TIME</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.returnTime || viewCustomer.return?.split(' ')[1] || '-'}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-gray-400 font-medium mb-1">TRANSIT AIRPORT</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.transitAirport || '-'}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-gray-400 font-medium mb-1">TRANSIT TIME</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.transitTime || '-'}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-gray-400 font-medium mb-1">OUTBOUND 2ND FLIGHT NO</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.outboundSecondFlightNo || '-'}</div>
+                                              </div>
+                                              <div>
+                                                <div className="text-gray-400 font-medium mb-1">RETURN 2ND FLIGHT NO</div>
+                                                <div className="bg-gray-50 rounded-lg p-2">{viewCustomer.returnSecondFlightNo || '-'}</div>
                                               </div>
                                               <div>
                                                 <div className="text-gray-400 font-medium mb-1">AIRLINE</div>
@@ -464,6 +540,12 @@ export default function CustomersFlights() {
                                   routeType: customer.routeType || customer.route?.type?.split(' • ')[1] || 'Direct',
                                   departureDate: customer.departureDate || customer.departure?.split(' ')[0] || '',
                                   departureTime: customer.departureTime || customer.departure?.split(' ')[1] || '',
+                                  returnDate: customer.returnDate || customer.return?.split(' ')[0] || '',
+                                  returnTime: customer.returnTime || customer.return?.split(' ')[1] || '',
+                                  transitAirport: customer.transitAirport || '',
+                                  transitTime: customer.transitTime || '',
+                                  outboundSecondFlightNo: customer.outboundSecondFlightNo || '',
+                                  returnSecondFlightNo: customer.returnSecondFlightNo || '',
                                 });
                               }}
                             />
@@ -522,7 +604,7 @@ export default function CustomersFlights() {
       {/* Add/Edit Customer Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`w-full shadow-xl relative ${editId !== null ? 'max-w-4xl rounded-3xl border border-white/80 bg-[#F3F4F6] p-7' : 'max-w-2xl rounded-2xl bg-white p-8'}`}>
+          <div className={`w-full shadow-xl relative ${editId !== null ? 'max-w-4xl max-h-[90vh] rounded-3xl border border-white/80 bg-[#F3F4F6] p-7 overflow-hidden flex flex-col' : 'max-w-2xl max-h-[90vh] rounded-2xl bg-white p-8 overflow-hidden'}`}>
             {editId !== null ? (
               <>
                 <button
@@ -556,7 +638,7 @@ export default function CustomersFlights() {
                   </div>
                 </div>
 
-                <div className="max-h-[56vh] overflow-y-auto pr-2">
+                <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Email</label>
@@ -580,16 +662,18 @@ export default function CustomersFlights() {
                     </div>
                     <div>
                       <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Trip Type</label>
-                      <select className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.tripType} onChange={e => setFormData({...formData, tripType: e.target.value})}>
-                        <option>One Way</option>
-                        <option>Round Trip</option>
+                      <select className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.tripType} onChange={e => handleTripTypeChange(e.target.value)}>
+                        {tripTypeOptions.map((tripType) => (
+                          <option key={tripType} value={tripType}>{tripType}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Route Type</label>
-                      <select className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.routeType} onChange={e => setFormData({...formData, routeType: e.target.value})}>
-                        <option>Direct</option>
-                        <option>Transit</option>
+                      <select className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.routeType} onChange={e => handleRouteTypeChange(e.target.value)}>
+                        {routeTypeOptions.map((routeType) => (
+                          <option key={routeType} value={routeType}>{routeType}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
@@ -608,6 +692,18 @@ export default function CustomersFlights() {
                       <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Departure Time</label>
                       <input type="time" className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.departureTime} onChange={e => setFormData({...formData, departureTime: e.target.value})} />
                     </div>
+                    {hasReturnLeg && (
+                      <>
+                        <div>
+                          <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Return Date</label>
+                          <input type="date" className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.returnDate} onChange={e => setFormData({...formData, returnDate: e.target.value})} />
+                        </div>
+                        <div>
+                          <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Return Time</label>
+                          <input type="time" className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.returnTime} onChange={e => setFormData({...formData, returnTime: e.target.value})} />
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Airline</label>
                       <input placeholder="e.g. Emirates" className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.airline} onChange={e => setFormData({...formData, airline: e.target.value})} />
@@ -636,6 +732,32 @@ export default function CustomersFlights() {
                       <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Notes</label>
                       <textarea placeholder="Additional notes..." className="w-full min-h-[88px] bg-white border border-[#D3D8E2] px-3 py-2 rounded-xl text-sm text-gray-700" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
                     </div>
+                    {hasTransitRoute && (
+                      <div className="md:col-span-2 rounded-2xl border border-amber-200 bg-[#FFF9E8] p-4">
+                        <h4 className="text-sm font-semibold text-[#B35A00] mb-3">Transit Details</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Transit Airport</label>
+                            <div className="relative">
+                              <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA0BA]" />
+                              <input placeholder="Transit airport" className="w-full h-10 bg-white border border-[#D3D8E2] pl-9 pr-3 rounded-xl text-sm text-gray-700" value={formData.transitAirport} onChange={e => setFormData({...formData, transitAirport: e.target.value})} />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Transit Time</label>
+                            <input placeholder="e.g. 2h 30m" className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.transitTime} onChange={e => setFormData({...formData, transitTime: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Outbound 2nd Flight No</label>
+                            <input placeholder="2nd outbound flight no" className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.outboundSecondFlightNo} onChange={e => setFormData({...formData, outboundSecondFlightNo: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-xs uppercase tracking-wide text-[#8FA0BA] font-semibold mb-1">Return 2nd Flight No</label>
+                            <input placeholder="2nd return flight no" className="w-full h-10 bg-white border border-[#D3D8E2] px-3 rounded-xl text-sm text-gray-700" value={formData.returnSecondFlightNo} onChange={e => setFormData({...formData, returnSecondFlightNo: e.target.value})} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -681,9 +803,10 @@ export default function CustomersFlights() {
                   ))}
                 </div>
                 <form onSubmit={(e) => e.preventDefault()}>
-                  {/* Passenger Tab */}
-                  {activeTab === 'Passenger' && (
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="max-h-[56vh] overflow-y-auto pr-1">
+                    {/* Passenger Tab */}
+                    {activeTab === 'Passenger' && (
+                      <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-1">
                         <label className="block text-sm font-medium mb-1">Passenger Name *</label>
                         <input required placeholder="Full name" className="w-full border p-2 rounded-lg" value={formData.passenger} onChange={e => setFormData({...formData, passenger: e.target.value})} />
@@ -720,23 +843,25 @@ export default function CustomersFlights() {
                           <option>Cancelled</option>
                         </select>
                       </div>
-                    </div>
-                  )}
-                  {/* Flight Info Tab */}
-                  {activeTab === 'Flight Info' && (
-                    <div className="grid grid-cols-2 gap-4">
+                      </div>
+                    )}
+                    {/* Flight Info Tab */}
+                    {activeTab === 'Flight Info' && (
+                      <div className="grid grid-cols-2 gap-4">
                       <div className="col-span-1">
                         <label className="block text-sm font-medium mb-1">Trip Type</label>
-                        <select className="w-full border p-2 rounded-lg" value={formData.tripType} onChange={e => setFormData({...formData, tripType: e.target.value})}>
-                          <option>One Way</option>
-                          <option>Round Trip</option>
+                        <select className="w-full border p-2 rounded-lg" value={formData.tripType} onChange={e => handleTripTypeChange(e.target.value)}>
+                          {tripTypeOptions.map((tripType) => (
+                            <option key={tripType} value={tripType}>{tripType}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-span-1">
                         <label className="block text-sm font-medium mb-1">Route Type</label>
-                        <select className="w-full border p-2 rounded-lg" value={formData.routeType} onChange={e => setFormData({...formData, routeType: e.target.value})}>
-                          <option>Direct</option>
-                          <option>Transit</option>
+                        <select className="w-full border p-2 rounded-lg" value={formData.routeType} onChange={e => handleRouteTypeChange(e.target.value)}>
+                          {routeTypeOptions.map((routeType) => (
+                            <option key={routeType} value={routeType}>{routeType}</option>
+                          ))}
                         </select>
                       </div>
                       <div className="col-span-1">
@@ -755,6 +880,18 @@ export default function CustomersFlights() {
                         <label className="block text-sm font-medium mb-1">Departure Time</label>
                         <input type="time" className="w-full border p-2 rounded-lg" value={formData.departureTime} onChange={e => setFormData({...formData, departureTime: e.target.value})} />
                       </div>
+                      {hasReturnLeg && (
+                        <>
+                          <div className="col-span-1">
+                            <label className="block text-sm font-medium mb-1">Return Date</label>
+                            <input type="date" className="w-full border p-2 rounded-lg" value={formData.returnDate} onChange={e => setFormData({...formData, returnDate: e.target.value})} />
+                          </div>
+                          <div className="col-span-1">
+                            <label className="block text-sm font-medium mb-1">Return Time</label>
+                            <input type="time" className="w-full border p-2 rounded-lg" value={formData.returnTime} onChange={e => setFormData({...formData, returnTime: e.target.value})} />
+                          </div>
+                        </>
+                      )}
                       <div className="col-span-1">
                         <label className="block text-sm font-medium mb-1">Airline</label>
                         <input placeholder="e.g. Emirates" className="w-full border p-2 rounded-lg" value={formData.airline} onChange={e => setFormData({...formData, airline: e.target.value})} />
@@ -775,11 +912,37 @@ export default function CustomersFlights() {
                         <label className="block text-sm font-medium mb-1">Adults</label>
                         <input type="number" min="1" className="w-full border p-2 rounded-lg" value={formData.adults} onChange={e => setFormData({...formData, adults: e.target.value})} />
                       </div>
-                    </div>
-                  )}
-                  {/* Extra Tab */}
-                  {activeTab === 'Extra' && (
-                    <div className="space-y-4">
+                      {hasTransitRoute && (
+                        <div className="col-span-2 rounded-2xl border border-amber-200 bg-[#FFF9E8] p-4">
+                          <h4 className="text-sm font-semibold text-[#B35A00] mb-3">Transit Details</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-1">
+                              <label className="block text-sm font-medium mb-1">Transit Airport</label>
+                              <div className="relative">
+                                <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input placeholder="Transit airport" className="w-full border p-2 pl-9 rounded-lg" value={formData.transitAirport} onChange={e => setFormData({...formData, transitAirport: e.target.value})} />
+                              </div>
+                            </div>
+                            <div className="col-span-1">
+                              <label className="block text-sm font-medium mb-1">Transit Time</label>
+                              <input placeholder="e.g. 2h 30m" className="w-full border p-2 rounded-lg" value={formData.transitTime} onChange={e => setFormData({...formData, transitTime: e.target.value})} />
+                            </div>
+                            <div className="col-span-1">
+                              <label className="block text-sm font-medium mb-1">Outbound 2nd Flight No</label>
+                              <input className="w-full border p-2 rounded-lg" value={formData.outboundSecondFlightNo} onChange={e => setFormData({...formData, outboundSecondFlightNo: e.target.value})} />
+                            </div>
+                            <div className="col-span-1">
+                              <label className="block text-sm font-medium mb-1">Return 2nd Flight No</label>
+                              <input className="w-full border p-2 rounded-lg" value={formData.returnSecondFlightNo} onChange={e => setFormData({...formData, returnSecondFlightNo: e.target.value})} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      </div>
+                    )}
+                    {/* Extra Tab */}
+                    {activeTab === 'Extra' && (
+                      <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium mb-1">Handled By</label>
                         <input placeholder="Select employee" className="w-full border p-2 rounded-lg" value={formData.handledBy} onChange={e => setFormData({...formData, handledBy: e.target.value})} />
@@ -788,8 +951,9 @@ export default function CustomersFlights() {
                         <label className="block text-sm font-medium mb-1">Notes</label>
                         <textarea placeholder="Additional notes..." className="w-full border p-2 rounded-lg" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
                       </div>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                   {/* Modal Actions */}
                   <div className="flex gap-3 mt-8">
                     <button

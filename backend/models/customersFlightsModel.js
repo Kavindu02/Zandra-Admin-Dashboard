@@ -12,7 +12,7 @@ exports.getCustomerFlightById = async (id) => {
 
 exports.addCustomerFlight = async (data) => {
   const [result] = await db.query(
-    'INSERT INTO CustomersFlights (passenger, passport, email, phone, invoiceNo, ticketNo, pnr, status, tripType, routeType, `from`, `to`, departureDate, departureTime, airline, flightNo, class, adults, handledBy, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO CustomersFlights (passenger, passport, email, phone, invoiceNo, ticketNo, pnr, status, tripType, routeType, `from`, `to`, departureDate, departureTime, returnDate, returnTime, transitAirport, transitTime, outboundSecondFlightNo, returnSecondFlightNo, airline, flightNo, class, adults, handledBy, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       data.passenger,
       data.passport,
@@ -26,8 +26,14 @@ exports.addCustomerFlight = async (data) => {
       data.routeType,
       data.from,
       data.to,
-      data.departureDate,
+      data.departureDate || null,
       data.departureTime,
+      data.returnDate || null,
+      data.returnTime,
+      data.transitAirport,
+      data.transitTime,
+      data.outboundSecondFlightNo,
+      data.returnSecondFlightNo,
       data.airline,
       data.flightNo,
       data.class,
@@ -46,7 +52,7 @@ exports.deleteCustomerFlight = async (id) => {
 
 exports.updateCustomerFlight = async (id, data) => {
   await db.query(
-    'UPDATE CustomersFlights SET passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, pnr=?, status=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, airline=?, flightNo=?, class=?, adults=?, handledBy=?, notes=? WHERE id=?',
+    'UPDATE CustomersFlights SET passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, pnr=?, status=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, returnDate=?, returnTime=?, transitAirport=?, transitTime=?, outboundSecondFlightNo=?, returnSecondFlightNo=?, airline=?, flightNo=?, class=?, adults=?, handledBy=?, notes=? WHERE id=?',
     [
       data.passenger,
       data.passport,
@@ -60,8 +66,14 @@ exports.updateCustomerFlight = async (id, data) => {
       data.routeType,
       data.from,
       data.to,
-      data.departureDate,
+      data.departureDate || null,
       data.departureTime,
+      data.returnDate || null,
+      data.returnTime,
+      data.transitAirport,
+      data.transitTime,
+      data.outboundSecondFlightNo,
+      data.returnSecondFlightNo,
       data.airline,
       data.flightNo,
       data.class,
