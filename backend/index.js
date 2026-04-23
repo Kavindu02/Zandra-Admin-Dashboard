@@ -20,7 +20,10 @@ const expenseRoutes = require('./routes/expenseRoutes');
 const receivableRoutes = require('./routes/receivableRoutes');
 const payableRoutes = require('./routes/payableRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
+const payrollRoutes = require('./routes/payrollRoutes');
 const geminiRoutes = require('./routes/geminiRoutes');
+const accountingRoutes = require('./routes/accountingRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
 
 const app = express();
 app.use(cors());
@@ -31,6 +34,8 @@ app.use('/api/expenses', expenseRoutes);
 app.use('/api/receivables', receivableRoutes);
 app.use('/api/payables', payableRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/payroll', payrollRoutes);
+app.use('/api/settings', settingsRoutes);
 
 const fs = require('fs');
 const path = require('path');
@@ -62,6 +67,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/profittracker', profitTrackerRoutes);
 app.use('/api/passengers', passengerRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/accounting', accountingRoutes);
 
 const PORT = Number(process.env.PORT) || 5000;
 const server = app.listen(PORT, () => {

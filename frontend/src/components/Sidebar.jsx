@@ -22,7 +22,6 @@ const menuGroups = [
       { label: 'Passengers', icon: Users },
       { label: 'Employees', icon: UserCog },
       { label: 'Issue Ticket', icon: Ticket },
-      { label: 'PDF Generator', icon: FileText },
       { label: 'Flight Calendar', icon: Calendar },
     ]
   },
@@ -41,6 +40,7 @@ const menuGroups = [
     items: [
       { label: 'Chart of Accounts', icon: BookOpen },
       { label: 'General Ledger', icon: FileText },
+      { label: 'Cash Flow', icon: TrendingUp },
       { label: 'Profit & Loss', icon: BarChart3 },
       { label: 'Balance Sheet', icon: DollarSign },
     ]
@@ -63,7 +63,7 @@ export default function Sidebar() {
     'Passengers': '/passengers',
     'Employees': '/employees',
     'Issue Ticket': '/issue-ticket',
-    'PDF Generator': '/invoice-generator',
+
     'Flight Calendar': '/flight-calendar',
     'Profit Tracker': '/profit-tracker',
     'Expenses': '/expenses',
@@ -72,6 +72,7 @@ export default function Sidebar() {
     'Payroll': '/payroll',
     'Chart of Accounts': '/chart-of-accounts',
     'General Ledger': '/general-ledger',
+    'Cash Flow': '/cash-flow',
     'Profit & Loss': '/profit-and-loss',
     'Balance Sheet': '/balance-sheet',
   }).reduce((acc, [label, path]) => {
@@ -91,7 +92,7 @@ export default function Sidebar() {
     'Passengers': '/passengers',
     'Employees': '/employees',
     'Issue Ticket': '/issue-ticket',
-    'PDF Generator': '/invoice-generator',
+
     'Flight Calendar': '/flight-calendar',
     'Profit Tracker': '/profit-tracker',
     'Expenses': '/expenses',
@@ -100,6 +101,7 @@ export default function Sidebar() {
     'Payroll': '/payroll',
     'Chart of Accounts': '/chart-of-accounts',
     'General Ledger': '/general-ledger',
+    'Cash Flow': '/cash-flow',
     'Profit & Loss': '/profit-and-loss',
     'Balance Sheet': '/balance-sheet',
   };

@@ -9,6 +9,15 @@ exports.getProfitTrackerData = async (req, res) => {
   }
 };
 
+exports.createProfitRecord = async (req, res) => {
+  try {
+    const record = await ProfitTracker.createProfitRecord(req.body);
+    res.status(201).json(record);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.updateProfitRecord = async (req, res) => {
   try {
     const updated = await ProfitTracker.updateProfitRecord(req.params.id, req.body);

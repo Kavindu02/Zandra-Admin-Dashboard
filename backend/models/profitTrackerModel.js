@@ -243,6 +243,54 @@ exports.deleteProfitRecord = async (id) => {
   await db.query('UPDATE ProfitTracker SET isDeleted = 1 WHERE id = ?', [id]);
 };
 
+exports.createProfitRecord = async (data) => {
+  await ensureProfitTrackerTable();
+
+  const sellCurrency = data.sellCurrency || 'LKR';
+  const costCurrency = data.costCurrency || 'LKR';
+  const exchangeRate = toNullableNumber(data.exchangeRate || 1);
+
+  const currencies = `${sellCurrency}/${costCurrency} @${exchangeRate}`;
+
+  const parts = calculateDerivedParts({
+    sell: data.sellAmount || data.sell || 0,
+    cost: data.costAmount || data.cost || 0,
+    companySharePercent: data.companySharePercent || 60,
+    employeeSharePercent: data.employeeSharePercent || 40
+  });
+
+  const [result] = await db.query(
+    `INSERT INTO ProfitTracker (
+      invoiceNo, passenger, paymentMethod, sellCurrency, costCurrency, 
+      exchangeRate, currencies, sell, cost, gross, 
+      companySharePercent, employeeSharePercent, companyShare, employeeShare, 
+      status, handledBy, isManual
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.invoiceNo || 'MANUAL-' + Date.now(),
+      data.passenger || 'Manual Entry',
+      data.paymentMethod || 'Cash',
+      sellCurrency,
+      costCurrency,
+      exchangeRate,
+      currencies,
+      parts.sell,
+      parts.cost,
+      parts.gross,
+      parts.companySharePercent,
+      parts.employeeSharePercent,
+      parts.companyShare,
+      parts.employeeShare,
+      data.status || 'Paid',
+      data.handledBy || 'ZANDRA TRAVELERS',
+      1
+    ]
+  );
+
+  const [newRows] = await db.query('SELECT * FROM ProfitTracker WHERE id = ?', [result.insertId]);
+  return newRows[0];
+};
+
 exports.recalculateAllRecords = async () => {
   await ensureProfitTrackerTable();
   const [rows] = await db.query(

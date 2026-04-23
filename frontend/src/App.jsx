@@ -17,6 +17,7 @@ import Payables from './pages/Payables.jsx';
 import Payroll from './pages/Payroll.jsx';
 import ChartOfAccounts from './pages/ChartOfAccounts.jsx';
 import GeneralLedger from './pages/GeneralLedger.jsx';
+import CashFlow from './pages/CashFlow.jsx';
 import ProfitAndLoss from './pages/ProfitAndLoss.jsx';
 import BalanceSheet from './pages/BalanceSheet.jsx';
 import './index.css';
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/payroll" element={<Payroll />} />
         <Route path="/chart-of-accounts" element={<ChartOfAccounts />} />
         <Route path="/general-ledger" element={<GeneralLedger />} />
+        <Route path="/cash-flow" element={<CashFlow />} />
         <Route path="/profit-and-loss" element={<ProfitAndLoss />} />
         <Route path="/balance-sheet" element={<BalanceSheet />} />
       </Routes>
