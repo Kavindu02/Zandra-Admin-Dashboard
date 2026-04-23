@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Bell, ChevronDown, Plane, Trash2 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const DROPDOWN_OPTIONS = ['All', 'Reminders', 'Customers', 'Ticket', 'Invoice'];
 
@@ -53,7 +54,7 @@ export default function Notifications() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/notifications');
+      const res = await axios.get(`${API_BASE_URL}/api/notifications`);
       setNotifications(res.data || []);
       notifyHeaderRefresh();
     } catch (err) {
@@ -117,7 +118,7 @@ export default function Notifications() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/notifications/${id}`);
+      await axios.delete(`${API_BASE_URL}/api/notifications/${id}`);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
       notifyHeaderRefresh();
     } catch (err) {
@@ -127,7 +128,7 @@ export default function Notifications() {
 
   const handleMarkRead = async (id, isRead) => {
     try {
-      const res = await axios.patch(`http://localhost:5000/api/notifications/${id}/read`, { isRead });
+      const res = await axios.patch(`${API_BASE_URL}/api/notifications/${id}/read`, { isRead });
       const nextStatus = Number(res.data?.isRead ?? (isRead ? 1 : 0));
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: nextStatus } : n))

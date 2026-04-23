@@ -9,7 +9,8 @@ export default function TopHeaderActions() {
 
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/notifications');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await axios.get(`${apiUrl}/api/notifications`);
       const list = Array.isArray(res.data) ? res.data : [];
       const unread = list.filter((item) => Number(item.isRead) !== 1).length;
       setUnreadCount(unread);

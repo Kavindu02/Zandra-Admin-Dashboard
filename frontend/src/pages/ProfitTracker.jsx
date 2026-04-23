@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Download, Pencil, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Download, Pencil, RefreshCw, Search, Trash2, Clock, MapPin } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
+import CustomSelect from '../components/CustomSelect';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function ProfitTracker() {
   const [rows, setRows] = useState([]);
@@ -27,7 +30,7 @@ export default function ProfitTracker() {
   const fetchProfitData = async () => {
     setIsLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/profittracker');
+      const res = await axios.get(`${API_BASE_URL}/api/profittracker`);
       const payload = res.data || {};
       setRows(Array.isArray(payload.records) ? payload.records : []);
       setSummary(payload.summary || { totalGrossProfit: 0, companyShare: 0, employeeShare: 0 });
@@ -100,7 +103,7 @@ export default function ProfitTracker() {
   const handleRecalculate = async () => {
     setIsRecalculating(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/profittracker/recalculate');
+      const res = await axios.post(`${API_BASE_URL}/api/profittracker/recalculate`);
       const payload = res.data || {};
       setRows(Array.isArray(payload.records) ? payload.records : []);
       setSummary(payload.summary || { totalGrossProfit: 0, companyShare: 0, employeeShare: 0 });
@@ -142,7 +145,7 @@ export default function ProfitTracker() {
 
     setIsSaving(true);
     try {
-      await axios.put(`http://localhost:5000/api/profittracker/${editRow.id}`, {
+      await axios.put(`${API_BASE_URL}/api/profittracker/${editRow.id}`, {
         paymentMethod: editForm.paymentMethod,
         sellCurrency: editForm.sellCurrency,
         costCurrency: editForm.costCurrency,
@@ -169,7 +172,7 @@ export default function ProfitTracker() {
     }
 
     try {
-      await axios.delete(`http://localhost:5000/api/profittracker/${id}`);
+      await axios.delete(`${API_BASE_URL}/api/profittracker/${id}`);
       await fetchProfitData();
     } catch (error) {
       console.error('Failed to delete record:', error);
@@ -336,7 +339,7 @@ export default function ProfitTracker() {
 
           {editRow && (
             <div className="fixed inset-0 z-50 bg-black/55 flex items-center justify-center p-4">
-              <div className="w-full max-w-2xl bg-[#F3F4F6] rounded-3xl border border-white/70 shadow-2xl">
+              <div className="w-full max-w-2xl bg-[#F3F4F6] rounded-3xl border border-white/70 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
                 <div className="px-6 pt-6 pb-3 flex items-center justify-between">
                   <h3 className="text-2xl leading-tight font-semibold text-[#1F2937]">
                     Edit Profit Row - {displayText(editRow.invoiceNo)}
@@ -346,118 +349,99 @@ export default function ProfitTracker() {
                   </button>
                 </div>
 
-                <div className="px-6 pb-5 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
-                  <label className="text-sm text-gray-700 font-medium">
-                    Payment Method
-                    <select
+                <div className="px-8 pb-8 flex-1 min-h-0 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  <div className="col-span-1">
+                    <CustomSelect 
+                      label="Payment Method"
                       value={editForm.paymentMethod}
-                      onChange={(e) => handleEditFieldChange('paymentMethod', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
-                    >
-                      <option value="">Select payment</option>
-                      <option value="Cash">Cash</option>
-                      <option value="Card">Card</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                    </select>
-                  </label>
+                      options={['Cash', 'Card', 'Bank Transfer']}
+                      onChange={val => handleEditFieldChange('paymentMethod', val)}
+                    />
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium">
-                    Status
-                    <select
-                      value={editForm.status}
-                      disabled
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-gray-100 px-3 text-sm text-gray-500 outline-none"
-                    >
-                      <option value="">Select status</option>
-                      <option value="Pending">Pending</option>
-                      <option value="Paid">Paid</option>
-                      <option value="Partial">Partial</option>
-                    </select>
-                  </label>
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Status</label>
+                    <input 
+                      disabled 
+                      className="w-full h-11 bg-gray-50 border border-gray-200 px-4 rounded-xl text-sm text-gray-500 outline-none font-medium cursor-not-allowed" 
+                      value={editForm.status || 'Select status'} 
+                      readOnly
+                    />
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium">
-                    Sell Currency
-                    <select
+                  <div className="col-span-1">
+                    <CustomSelect 
+                      label="Sell Currency"
                       value={editForm.sellCurrency}
-                      onChange={(e) => handleEditFieldChange('sellCurrency', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
-                    >
-                      <option value="">Select currency</option>
-                      <option value="LKR">LKR</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                    </select>
-                  </label>
+                      options={['LKR', 'USD', 'EUR']}
+                      onChange={val => handleEditFieldChange('sellCurrency', val)}
+                    />
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium">
-                    Cost Currency
-                    <select
+                  <div className="col-span-1">
+                    <CustomSelect 
+                      label="Cost Currency"
                       value={editForm.costCurrency}
-                      onChange={(e) => handleEditFieldChange('costCurrency', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
-                    >
-                      <option value="">Select currency</option>
-                      <option value="LKR">LKR</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                    </select>
-                  </label>
+                      options={['LKR', 'USD', 'EUR']}
+                      onChange={val => handleEditFieldChange('costCurrency', val)}
+                    />
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium">
-                    Exchange Rate
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Exchange Rate</label>
                     <input
                       type="number"
                       value={editForm.exchangeRate}
                       onChange={(e) => handleEditFieldChange('exchangeRate', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
+                      className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium"
                       placeholder="1"
                       step="0.0001"
                     />
-                  </label>
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium">
-                    Sell Amount (LKR)
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Sell Amount (LKR)</label>
                     <input
                       type="number"
                       value={editForm.sellAmount}
                       onChange={(e) => handleEditFieldChange('sellAmount', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
+                      className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium"
                       placeholder="0"
                     />
-                  </label>
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium">
-                    Cost Amount (LKR)
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Cost Amount (LKR)</label>
                     <input
                       type="number"
                       value={editForm.costAmount}
                       onChange={(e) => handleEditFieldChange('costAmount', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
+                      className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium"
                       placeholder="0"
                     />
-                  </label>
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium">
-                    Company Share %
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Company Share %</label>
                     <input
                       type="number"
                       value={editForm.companySharePercent}
                       onChange={(e) => handleEditFieldChange('companySharePercent', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
+                      className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium"
                       placeholder="60"
                     />
-                  </label>
+                  </div>
 
-                  <label className="text-sm text-gray-700 font-medium md:col-span-1">
-                    Employee Share %
+                  <div className="col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Employee Share %</label>
                     <input
                       type="number"
                       value={editForm.employeeSharePercent}
                       onChange={(e) => handleEditFieldChange('employeeSharePercent', e.target.value)}
-                      className="mt-1.5 w-full h-10 rounded-xl border border-[#C6CAD3] bg-white px-3 text-sm text-[#111827] outline-none"
+                      className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium"
                       placeholder="40"
                     />
-                  </label>
+                  </div>
 
                   <div className="hidden md:block" />
 
@@ -477,11 +461,11 @@ export default function ProfitTracker() {
                   </div>
                 </div>
 
-                <div className="px-6 pb-6 flex items-center justify-end gap-3">
+                <div className="px-8 pb-8 flex items-center justify-end gap-4 border-t border-gray-100 pt-6 mt-4">
                   <button
                     type="button"
                     onClick={closeEditModal}
-                    className="px-7 py-2.5 rounded-2xl border border-[#C9CDD6] bg-[#ECEEF2] text-[#1F2937] font-semibold hover:bg-[#E3E6EC]"
+                    className="px-8 py-3 border border-gray-200 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -489,9 +473,9 @@ export default function ProfitTracker() {
                     type="button"
                     onClick={handleSaveEdit}
                     disabled={isSaving}
-                    className="px-7 py-2.5 rounded-2xl bg-[#182B5C] text-white font-semibold hover:bg-[#122247] disabled:opacity-60"
+                    className="px-8 py-3 bg-[#101D42] text-white rounded-xl font-semibold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all cursor-pointer disabled:opacity-60"
                   >
-                    {isSaving ? 'Saving...' : 'Save'}
+                    {isSaving ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </div>

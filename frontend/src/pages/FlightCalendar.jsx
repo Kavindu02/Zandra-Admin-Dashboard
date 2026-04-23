@@ -11,8 +11,9 @@ import {
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const CUSTOMERS_FLIGHTS_API = 'http://localhost:5000/api/customersflights';
+const CUSTOMERS_FLIGHTS_API = `${API_BASE_URL}/api/customersflights`;
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_LABELS = [

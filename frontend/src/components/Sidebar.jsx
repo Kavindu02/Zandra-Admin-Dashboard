@@ -1,8 +1,9 @@
-//
 import { 
   LayoutDashboard, Bell, AlarmClock, Plane, 
   TrendingUp, Ticket, FileText, Calendar, 
-  Users, CalendarClock, LogOut 
+  Users, CalendarClock, LogOut,
+  ArrowUpCircle, ArrowDownCircle, CreditCard, Banknote,
+  BookOpen, BarChart3, DollarSign, UserCog
 } from 'lucide-react';
 
 const menuGroups = [
@@ -18,10 +19,30 @@ const menuGroups = [
     title: 'OPERATIONS',
     items: [
       { label: 'Customers & Flights', icon: Plane },
-      { label: 'Profit Tracker', icon: TrendingUp },
+      { label: 'Passengers', icon: Users },
+      { label: 'Employees', icon: UserCog },
       { label: 'Issue Ticket', icon: Ticket },
       { label: 'PDF Generator', icon: FileText },
       { label: 'Flight Calendar', icon: Calendar },
+    ]
+  },
+  {
+    title: 'FINANCE',
+    items: [
+      { label: 'Profit Tracker', icon: TrendingUp },
+      { label: 'Expenses', icon: ArrowUpCircle },
+      { label: 'Receivables', icon: ArrowDownCircle },
+      { label: 'Payables', icon: CreditCard },
+      { label: 'Payroll', icon: Banknote },
+    ]
+  },
+  {
+    title: 'ACCOUNTING',
+    items: [
+      { label: 'Chart of Accounts', icon: BookOpen },
+      { label: 'General Ledger', icon: FileText },
+      { label: 'Profit & Loss', icon: BarChart3 },
+      { label: 'Balance Sheet', icon: DollarSign },
     ]
   },
 ];
@@ -39,10 +60,20 @@ export default function Sidebar() {
     'Notifications': '/notifications',
     'Reminders': '/reminders',
     'Customers & Flights': '/customers-flights',
-    'Profit Tracker': '/profit-tracker',
+    'Passengers': '/passengers',
+    'Employees': '/employees',
     'Issue Ticket': '/issue-ticket',
     'PDF Generator': '/invoice-generator',
     'Flight Calendar': '/flight-calendar',
+    'Profit Tracker': '/profit-tracker',
+    'Expenses': '/expenses',
+    'Receivables': '/receivables',
+    'Payables': '/payables',
+    'Payroll': '/payroll',
+    'Chart of Accounts': '/chart-of-accounts',
+    'General Ledger': '/general-ledger',
+    'Profit & Loss': '/profit-and-loss',
+    'Balance Sheet': '/balance-sheet',
   }).reduce((acc, [label, path]) => {
     acc[path] = label;
     return acc;
@@ -57,28 +88,38 @@ export default function Sidebar() {
     'Notifications': '/notifications',
     'Reminders': '/reminders',
     'Customers & Flights': '/customers-flights',
-    'Profit Tracker': '/profit-tracker',
+    'Passengers': '/passengers',
+    'Employees': '/employees',
     'Issue Ticket': '/issue-ticket',
     'PDF Generator': '/invoice-generator',
     'Flight Calendar': '/flight-calendar',
+    'Profit Tracker': '/profit-tracker',
+    'Expenses': '/expenses',
+    'Receivables': '/receivables',
+    'Payables': '/payables',
+    'Payroll': '/payroll',
+    'Chart of Accounts': '/chart-of-accounts',
+    'General Ledger': '/general-ledger',
+    'Profit & Loss': '/profit-and-loss',
+    'Balance Sheet': '/balance-sheet',
   };
 
   return (
     <aside className="bg-[#101D42] text-gray-400 w-64 fixed left-0 top-0 bottom-0 h-full flex flex-col justify-between shrink-0 z-30">
-      <div className="p-4">
+      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto p-4 custom-scrollbar">
         {/* Logo Section */}
-        <div className="flex items-center gap-3 mb-8 px-2">
+        <div className="flex items-center gap-3 mb-8 px-2 flex-shrink-0">
           <div className="bg-[#F3A91B] p-2 rounded-lg">
             <Plane className="text-[#101D42] w-5 h-5" fill="currentColor" />
           </div>
           <div>
-            <h1 className="text-white font-bold text-sm leading-tight tracking-wider">ZANDRA TRAVELERS</h1>
-            <p className="text-[10px] text-gray-500 font-bold tracking-tighter">ADMIN PANEL</p>
+            <h1 className="text-white font-bold text-sm leading-tight tracking-wider uppercase">Zandra Travelers</h1>
+            <p className="text-[10px] text-gray-500 font-bold tracking-tighter uppercase">Admin Panel</p>
           </div>
         </div>
 
         {/* Menu Groups */}
-        <nav className="space-y-6">
+        <nav className="space-y-6 flex-1">
           {menuGroups.map((group) => (
             <div key={group.title}>
               <h3 className="text-[10px] font-bold text-gray-500 tracking-widest mb-3 px-2">

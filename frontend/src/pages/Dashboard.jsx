@@ -75,7 +75,8 @@ export default function Dashboard() {
 
   const fetchDashboard = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/dashboard/summary');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await axios.get(`${apiUrl}/api/dashboard/summary`);
       const data = res.data || {};
       const settings = data.settings || {};
 
