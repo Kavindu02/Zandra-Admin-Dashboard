@@ -7,6 +7,7 @@ import {
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import CustomSelect from '../components/CustomSelect';
+import { exportToCSV } from '../utils/csvExport';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -139,7 +140,17 @@ export default function Expenses() {
               <p className="text-sm text-gray-500 mt-1">Track all business expenses</p>
             </div>
             <div className="flex gap-3">
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+              <button 
+                onClick={() => exportToCSV(filteredExpenses, 'Expenses_Report', {
+                  date: 'Date',
+                  category: 'Category',
+                  description: 'Description',
+                  amount: 'Amount (LKR)',
+                  payment_method: 'Payment Method',
+                  notes: 'Notes'
+                })}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+              >
                 <Download size={18} />
                 Export
               </button>

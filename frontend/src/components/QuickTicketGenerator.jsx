@@ -70,6 +70,12 @@ export default function QuickTicketGenerator() {
         if (parsedData.issuedDate) newData.issuedDate = parsedData.issuedDate;
         
         if (parsedData.segments && parsedData.segments.length > 0) {
+           const extractLogo = (fno) => {
+              if (!fno) return '';
+              const code = fno.trim().substring(0, 2).toUpperCase();
+              return /^[A-Z0-9]{2}$/.test(code) ? code : '';
+           };
+           
            const mapSeg = (s) => ({
                departureDate: s.departureDate || '',
                departureTime: s.departureTime || '',
@@ -78,6 +84,7 @@ export default function QuickTicketGenerator() {
                from: s.from || '',
                to: s.to || '',
                airline: s.airline || '',
+               airlineLogo: s.airlineLogo || extractLogo(s.flightNo) || '',
                flightNo: s.flightNo || '',
                duration: s.duration || '',
                equipment: s.equipment || '',

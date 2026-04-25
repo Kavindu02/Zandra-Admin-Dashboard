@@ -8,6 +8,7 @@ import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import AddPayrollModal from '../components/AddPayrollModal';
 import PayrollSettingsModal from '../components/PayrollSettingsModal';
+import { generatePayrollPDF } from '../utils/generatePayrollPDF';
 
 export default function Payroll() {
   const [selectedMonth, setSelectedMonth] = useState('2026-04');
@@ -141,7 +142,10 @@ export default function Payroll() {
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
               </div>
 
-              <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all shadow-sm">
+              <button 
+                onClick={() => generatePayrollPDF(payrolls, selectedMonth)}
+                className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all shadow-sm"
+              >
                 <FileDown size={18} />
                 <span>Summary PDF</span>
               </button>

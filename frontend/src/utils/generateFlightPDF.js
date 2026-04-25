@@ -82,6 +82,7 @@ export const generateFlightPDF = async (customer) => {
           date: seg.departureDate,
           time: seg.departureTime,
           airline:    (seg.airline    || '').trim() ? seg.airline    : customer.airline,
+          airlineLogo:(seg.airlineLogo || '').trim() ? seg.airlineLogo: customer.airlineLogo,
           flightNo:   (seg.flightNo   || '').trim() ? seg.flightNo   : customer.flightNo,
           class:      customer.class,
           airlineRef: (seg.airlineRef || '').trim() ? seg.airlineRef : customer.airlineRef,
@@ -96,9 +97,8 @@ export const generateFlightPDF = async (customer) => {
     });
   }
 
-  if (customer.tripType === 'Round Trip' || customer.tripType === 'Multi City') {
-    if (customer.returnSegments && customer.returnSegments.length > 0) {
-      customer.returnSegments.forEach(seg => {
+  if (customer.returnSegments && customer.returnSegments.length > 0) {
+    customer.returnSegments.forEach(seg => {
         if (seg.from || seg.to) {
           addLeg({
             ...seg,
@@ -108,6 +108,7 @@ export const generateFlightPDF = async (customer) => {
             arrivalTime: seg.arrivalTime,
             duration:    seg.duration,
             airline:    (seg.airline    || '').trim() ? seg.airline    : customer.airline,
+            airlineLogo:(seg.airlineLogo || '').trim() ? seg.airlineLogo: customer.airlineLogo,
             flightNo:   (seg.flightNo   || '').trim() ? seg.flightNo   : customer.flightNo,
             class:      customer.class,
             airlineRef: (seg.airlineRef || '').trim() ? seg.airlineRef : customer.airlineRef,
@@ -121,24 +122,23 @@ export const generateFlightPDF = async (customer) => {
         }
       });
     }
-  }
 
   // Fallback if no segments
   if (renderFlights.length === 0) {
     if (customer.routeType === 'Direct') {
-      addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.to, airline: customer.airline, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+      addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.to, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
       if (customer.tripType === 'Round Trip') {
-        addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.from, airline: customer.airline, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+        addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.from, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
       }
     } else if (customer.routeType === 'Transit') {
-      addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.transitAirport, airline: customer.airline, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+      addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.transitAirport, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
       if (customer.transitAirport) {
-        addLeg({ date: customer.departureDate, time: customer.transitTime, from: customer.transitAirport, to: customer.to, airline: customer.airline, flightNo: customer.outboundSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+        addLeg({ date: customer.departureDate, time: customer.transitTime, from: customer.transitAirport, to: customer.to, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.outboundSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
       }
       if (customer.tripType === 'Round Trip') {
-        addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.transitAirport, airline: customer.airline, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+        addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.transitAirport, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
         if (customer.transitAirport) {
-          addLeg({ date: customer.returnDate, time: '', from: customer.transitAirport, to: customer.from, airline: customer.airline, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+          addLeg({ date: customer.returnDate, time: '', from: customer.transitAirport, to: customer.from, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
         }
       }
     }
@@ -149,13 +149,14 @@ export const generateFlightPDF = async (customer) => {
   let pageIdx = 0;
 
   for (let i = 0; i < renderFlights.length; i++) {
-    if (currentY < 180) {
+    if (currentY < 200) {
       pageIdx++;
       if (pageIdx < pdfDoc.getPageCount()) {
         page = pdfDoc.getPages()[pageIdx];
       } else {
         const doc2 = await PDFDocument.load(existingPdfBytes);
-        const [newPage] = await pdfDoc.copyPages(doc2, [1]);
+        const copyIdx = doc2.getPageCount() > 1 ? 1 : 0;
+        const [newPage] = await pdfDoc.copyPages(doc2, [copyIdx]);
         pdfDoc.addPage(newPage);
         page = pdfDoc.getPages()[pdfDoc.getPageCount() - 1];
       }
@@ -171,41 +172,58 @@ export const generateFlightPDF = async (customer) => {
     page.drawText(fDate, { x: 40, y: currentY + 8, size: 10, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
     page.drawText(fl.class || 'Economy', { x: 510, y: currentY + 8, size: 10, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
 
-    currentY -= 75;
+    currentY -= 80;
 
     // Flight number box
     const flBoxTitle = (fl.flightNo || '').substring(0, 10).trim();
-    page.drawRectangle({ x: 38, y: currentY + 50, width: 68, height: 18, color: yellowAccent, borderColor: warmBorder, borderWidth: 0.6 });
-    page.drawText(flBoxTitle, { x: 42, y: currentY + 55, size: 11, font, color: rgb(0.18, 0.28, 0.38) });
+    page.drawRectangle({ x: 38, y: currentY + 55, width: 68, height: 18, color: yellowAccent, borderColor: warmBorder, borderWidth: 0.6 });
+    page.drawText(flBoxTitle, { x: 42, y: currentY + 60, size: 11, font, color: rgb(0.18, 0.28, 0.38) });
 
     // Airline + Equipment (left column)
-    page.drawText(fl.airline || '', { x: 38, y: currentY + 35, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
+    if (fl.airlineLogo && fl.airlineLogo.trim().length >= 2) {
+      try {
+        const logoUrl = `https://pics.avs.io/200/200/${fl.airlineLogo.trim().toUpperCase()}.png`;
+        const logoBytes = await fetch(logoUrl).then(res => res.arrayBuffer());
+        const logoImage = await pdfDoc.embedPng(logoBytes);
+        page.drawImage(logoImage, {
+          x: 35,
+          y: currentY + 33,
+          width: 38,
+          height: 18
+        });
+      } catch (err) {
+         console.warn('Failed to draw logo', err);
+      }
+    }
+    
+    const airlineLabel = (fl.airline || '').substring(0, 28);
+    page.drawText(airlineLabel, { x: 38, y: currentY + 22, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
     if (fl.equipment) {
-      page.drawText(`Equipment: ${fl.equipment}`, { x: 38, y: currentY + 24, size: 8, font, color: rgb(0.35, 0.40, 0.48) });
+      page.drawText(`Equipment: ${fl.equipment}`, { x: 38, y: currentY + 11, size: 8, font, color: rgb(0.35, 0.40, 0.48) });
     }
 
     // From airport
     const origin = parseAirport(fl.from);
-    page.drawText(origin.code, { x: 130, y: currentY + 55, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
-    page.drawText(origin.rest.substring(0, 30), { x: 130, y: currentY + 41, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
-    page.drawText(`${fDate} ${fl.time || ''}`, { x: 130, y: currentY + 29, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+    page.drawText(origin.code, { x: 130, y: currentY + 60, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
+    page.drawText(origin.rest.substring(0, 30), { x: 130, y: currentY + 46, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+    page.drawText(`${fDate} ${fl.time || ''}`, { x: 130, y: currentY + 34, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
     if (fl.departureTerminal) {
-      page.drawText(`Terminal: ${fl.departureTerminal}`, { x: 130, y: currentY + 18, size: 8, font, color: rgb(0.35, 0.40, 0.48) });
+      page.drawText(`Terminal: ${fl.departureTerminal}`, { x: 130, y: currentY + 22, size: 8, font, color: rgb(0.35, 0.40, 0.48) });
     }
 
     // Duration
-    page.drawText('Duration', { x: 320, y: currentY + 55, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
-    page.drawText(fl.duration || '-', { x: 320, y: currentY + 43, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+    page.drawText('Duration', { x: 340, y: currentY + 60, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+    page.drawText(fl.duration || '-', { x: 340, y: currentY + 48, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
 
     // To airport
     const dest = parseAirport(fl.to);
-    page.drawText(dest.code, { x: 420, y: currentY + 55, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
-    page.drawText(dest.rest.substring(0, 30), { x: 420, y: currentY + 41, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+    page.drawText(dest.code, { x: 410, y: currentY + 60, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
+    page.drawText(dest.rest.substring(0, 30), { x: 410, y: currentY + 46, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
     const arrivalFDate = formatPDFDate(fl.arrivalDate);
     const arrivalStr = (`${arrivalFDate} ${fl.arrivalTime || ''}`).trim();
-    page.drawText(arrivalStr || '-', { x: 420, y: currentY + 29, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+    page.drawText(arrivalStr || '-', { x: 410, y: currentY + 34, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
     if (fl.arrivalTerminal) {
-      page.drawText(`Terminal: ${fl.arrivalTerminal}`, { x: 420, y: currentY + 18, size: 8, font, color: rgb(0.35, 0.40, 0.48) });
+      page.drawText(`Terminal: ${fl.arrivalTerminal}`, { x: 410, y: currentY + 22, size: 8, font, color: rgb(0.35, 0.40, 0.48) });
     }
 
     currentY -= 30;

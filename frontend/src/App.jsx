@@ -20,6 +20,7 @@ import GeneralLedger from './pages/GeneralLedger.jsx';
 import CashFlow from './pages/CashFlow.jsx';
 import ProfitAndLoss from './pages/ProfitAndLoss.jsx';
 import BalanceSheet from './pages/BalanceSheet.jsx';
+import TourPackages from './pages/TourPackages.jsx';
 import './index.css';
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/cash-flow" element={<CashFlow />} />
         <Route path="/profit-and-loss" element={<ProfitAndLoss />} />
         <Route path="/balance-sheet" element={<BalanceSheet />} />
+        <Route path="/tour-packages" element={<TourPackages />} />
       </Routes>
     </Router>
   );

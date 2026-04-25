@@ -25,9 +25,11 @@ const geminiRoutes = require('./routes/geminiRoutes');
 const accountingRoutes = require('./routes/accountingRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 
+
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use('/api/users', userRoutes);
 app.use('/api/expenses', expenseRoutes);
@@ -36,6 +38,7 @@ app.use('/api/payables', payableRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/reminders', require('./routes/reminderRoutes'));
 
 const fs = require('fs');
 const path = require('path');
@@ -68,6 +71,7 @@ app.use('/api/profittracker', profitTrackerRoutes);
 app.use('/api/passengers', passengerRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/accounting', accountingRoutes);
+
 
 const PORT = Number(process.env.PORT) || 5000;
 const server = app.listen(PORT, () => {

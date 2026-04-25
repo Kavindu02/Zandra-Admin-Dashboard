@@ -39,6 +39,7 @@ export default function CustomersFlights() {
     outboundSecondFlightNo: '',
     returnSecondFlightNo: '',
     airline: '',
+    airlineLogo: '',
     flightNo: '',
     class: 'Economy',
     adults: 1,
@@ -143,6 +144,7 @@ export default function CustomersFlights() {
       segments,
       returnSegments,
       route: customer.route || { from, to, type: `${tripType} • ${routeType}` },
+      airlineLogo: customer.airlineLogo || '',
       adults: Number(customer.adults) || 1
     };
   };
@@ -397,6 +399,7 @@ export default function CustomersFlights() {
               date: seg.departureDate, 
               time: seg.departureTime, 
               airline: (seg.airline || '').trim() ? seg.airline : customer.airline, 
+              airlineLogo: (seg.airlineLogo || '').trim() ? seg.airlineLogo : customer.airlineLogo, 
               flightNo: (seg.flightNo || '').trim() ? seg.flightNo : customer.flightNo, 
               class: customer.class, 
               airlineRef: (seg.airlineRef || '').trim() ? seg.airlineRef : customer.airlineRef, 
@@ -412,10 +415,9 @@ export default function CustomersFlights() {
       }
 
       // 2. Use Return Segments (if applicable)
-      if (customer.tripType === 'Round Trip' || customer.tripType === 'Multi City') {
-        if (customer.returnSegments && customer.returnSegments.length > 0) {
-          customer.returnSegments.forEach(seg => {
-            if (seg.from || seg.to) {
+      if (customer.returnSegments && customer.returnSegments.length > 0) {
+        customer.returnSegments.forEach(seg => {
+          if (seg.from || seg.to) {
               addLeg({ 
                 ...seg, 
                 date: seg.departureDate, 
@@ -424,6 +426,7 @@ export default function CustomersFlights() {
                 arrivalTime: seg.arrivalTime,
                 duration: seg.duration,
                 airline: (seg.airline || '').trim() ? seg.airline : customer.airline, 
+                airlineLogo: (seg.airlineLogo || '').trim() ? seg.airlineLogo : customer.airlineLogo, 
                 flightNo: (seg.flightNo || '').trim() ? seg.flightNo : customer.flightNo, 
                 class: customer.class, 
                 airlineRef: (seg.airlineRef || '').trim() ? seg.airlineRef : customer.airlineRef, 
@@ -435,26 +438,25 @@ export default function CustomersFlights() {
                 arrivalTerminal: seg.arrivalTerminal || ''
               });
             }
-          });
-        }
+        });
       }
 
       // 3. Fallbacks if segments arrays were somehow empty
       if (renderFlights.length === 0) {
         if (customer.routeType === 'Direct') {
-           addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.to, airline: customer.airline, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+           addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.to, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
            if (customer.tripType === 'Round Trip') {
-             addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.from, airline: customer.airline, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+             addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.from, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
            }
         } else if (customer.routeType === 'Transit') {
-           addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.transitAirport, airline: customer.airline, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+           addLeg({ date: customer.departureDate, time: customer.departureTime, from: customer.from, to: customer.transitAirport, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
            if (customer.transitAirport) {
-             addLeg({ date: customer.departureDate, time: customer.transitTime, from: customer.transitAirport, to: customer.to, airline: customer.airline, flightNo: customer.outboundSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+             addLeg({ date: customer.departureDate, time: customer.transitTime, from: customer.transitAirport, to: customer.to, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.outboundSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
            }
            if (customer.tripType === 'Round Trip') {
-             addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.transitAirport, airline: customer.airline, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+             addLeg({ date: customer.returnDate, time: customer.returnTime, from: customer.to, to: customer.transitAirport, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
                if (customer.transitAirport) {
-               addLeg({ date: customer.returnDate, time: '', from: customer.transitAirport, to: customer.from, airline: customer.airline, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
+               addLeg({ date: customer.returnDate, time: '', from: customer.transitAirport, to: customer.from, airline: customer.airline, airlineLogo: customer.airlineLogo, flightNo: customer.returnSecondFlightNo || customer.flightNo, class: customer.class, airlineRef: customer.airlineRef, baggage: customer.baggage, status: customer.status, fareBasis: customer.fareBasis });
                }
            }
         }
@@ -464,7 +466,7 @@ export default function CustomersFlights() {
       let pageIdx = 0; // Track which page we are on
 
       for (let i = 0; i < renderFlights.length; i++) {
-        if (currentY < 180) {
+        if (currentY < 200) {
             // Overflow! Try to use next existing template page first
             pageIdx++;
             if (pageIdx < pdfDoc.getPageCount()) {
@@ -472,7 +474,8 @@ export default function CustomersFlights() {
             } else {
                 // Out of pre-existing template pages, append a clone of the second (blank) template page
                 const doc2 = await PDFDocument.load(existingPdfBytes);
-                const [newPage] = await pdfDoc.copyPages(doc2, [1]);
+                const copyIdx = doc2.getPageCount() > 1 ? 1 : 0;
+                const [newPage] = await pdfDoc.copyPages(doc2, [copyIdx]);
                 pdfDoc.addPage(newPage);
                 page = pdfDoc.getPages()[pdfDoc.getPageCount() - 1];
             }
@@ -488,41 +491,58 @@ export default function CustomersFlights() {
         page.drawText(fDate, { x: 40, y: currentY + 8, size: 10, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
         page.drawText(fl.class || 'Economy', { x: 510, y: currentY + 8, size: 10, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
         
-        currentY -= 65; // move down for flight details
+        currentY -= 80; // move down for flight details
         
         // Flight info 
         const flBoxTitle = (fl.flightNo || '').substring(0,10).trim();
-        page.drawRectangle({ x: 38, y: currentY + 40, width: 68, height: 18, color: yellowAccent, borderColor: warmBorder, borderWidth: 0.6 });
-        page.drawText(flBoxTitle, { x: 42, y: currentY + 45, size: 11, font, color: rgb(0.18, 0.28, 0.38) });
+        page.drawRectangle({ x: 38, y: currentY + 55, width: 68, height: 18, color: yellowAccent, borderColor: warmBorder, borderWidth: 0.6 });
+        page.drawText(flBoxTitle, { x: 42, y: currentY + 60, size: 11, font, color: rgb(0.18, 0.28, 0.38) });
         
         // Airline text placed cleanly below the flight number box
-        page.drawText(fl.airline || '', { x: 38, y: currentY + 25, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
+        if (fl.airlineLogo && fl.airlineLogo.trim().length >= 2) {
+          try {
+            const logoUrl = `https://pics.avs.io/200/200/${fl.airlineLogo.trim().toUpperCase()}.png`;
+            const logoBytes = await fetch(logoUrl).then(res => res.arrayBuffer());
+            const logoImage = await pdfDoc.embedPng(logoBytes);
+            page.drawImage(logoImage, {
+              x: 35,
+              y: currentY + 33,
+              width: 38,
+              height: 18
+            });
+          } catch (err) {
+             console.warn('Failed to draw logo', err);
+          }
+        }
+        
+        const airlineLabel = (fl.airline || '').substring(0, 28);
+        page.drawText(airlineLabel, { x: 38, y: currentY + 22, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
         if (fl.equipment) {
-          page.drawText(`Equipment: ${fl.equipment}`, { x: 38, y: currentY + 13, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
+          page.drawText(`Equipment: ${fl.equipment}`, { x: 38, y: currentY + 11, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
         }
         
         const origin = parseAirport(fl.from);
-        page.drawText(origin.code, { x: 130, y: currentY + 45, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
-        page.drawText(origin.rest.substring(0, 30), { x: 130, y: currentY + 31, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
-        page.drawText(`${fDate} ${fl.time || ''}`, { x: 130, y: currentY + 19, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+        page.drawText(origin.code, { x: 160, y: currentY + 60, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
+        page.drawText(origin.rest.substring(0, 30), { x: 160, y: currentY + 46, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+        page.drawText(`${fDate} ${fl.time || ''}`, { x: 160, y: currentY + 34, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
         if (fl.departureTerminal) {
-          page.drawText(`Terminal: ${fl.departureTerminal}`, { x: 130, y: currentY + 7, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+          page.drawText(`Terminal: ${fl.departureTerminal}`, { x: 160, y: currentY + 22, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
         }
 
-        page.drawText('Duration', { x: 320, y: currentY + 45, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
-        page.drawText(fl.duration || '-', { x: 320, y: currentY + 33, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+        page.drawText('Duration', { x: 340, y: currentY + 60, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
+        page.drawText(fl.duration || '-', { x: 340, y: currentY + 48, size: 9, font, color: rgb(0.4, 0.4, 0.4) });
         
         const dest = parseAirport(fl.to);
-        page.drawText(dest.code, { x: 420, y: currentY + 45, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
-        page.drawText(dest.rest.substring(0, 30), { x: 420, y: currentY + 31, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+        page.drawText(dest.code, { x: 410, y: currentY + 60, size: 12, font: fontBold, color: rgb(0.18, 0.28, 0.38) });
+        page.drawText(dest.rest.substring(0, 30), { x: 410, y: currentY + 46, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
         const arrivalFDate = formatPDFDate(fl.arrivalDate);
         const arrivalStr = (`${arrivalFDate} ${fl.arrivalTime || ''}`).trim();
-        page.drawText(arrivalStr || '-', { x: 420, y: currentY + 19, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+        page.drawText(arrivalStr || '-', { x: 410, y: currentY + 34, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
         if (fl.arrivalTerminal) {
-          page.drawText(`Terminal: ${fl.arrivalTerminal}`, { x: 420, y: currentY + 7, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
+          page.drawText(`Terminal: ${fl.arrivalTerminal}`, { x: 410, y: currentY + 22, size: 9, font, color: rgb(0.18, 0.28, 0.38) });
         }
         
-        currentY -= 35; // move down for footer
+        currentY -= 30; // move down for footer
         
         // Horizontal divider above meta text
         const dividerY = currentY + 12;
@@ -1237,7 +1257,29 @@ export default function CustomersFlights() {
                     )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Airline</label>
-                      <input placeholder="e.g. Emirates" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none" value={formData.airline} onChange={e => setFormData({...formData, airline: e.target.value})} />
+                      <div className="flex gap-2">
+                        <input placeholder="Name (e.g. Emirates)" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none" value={formData.airline} onChange={e => setFormData({...formData, airline: e.target.value})} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1 flex justify-between">
+                         <span className="truncate">Airline IATA Code (for Logo)</span>
+                         <span className="text-[10px] text-gray-400 font-normal">e.g. EK</span>
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input 
+                          placeholder="EK" 
+                          maxLength="2"
+                          className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none uppercase" 
+                          value={formData.airlineLogo} 
+                          onChange={e => setFormData({...formData, airlineLogo: e.target.value.toUpperCase()})} 
+                        />
+                        {formData.airlineLogo && formData.airlineLogo.trim().length >= 2 && (
+                           <div className="h-10 w-12 shrink-0 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center p-1">
+                             <img src={`https://pics.avs.io/200/200/${formData.airlineLogo.trim().toUpperCase()}.png`} alt="logo" className="max-h-full max-w-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+                           </div>
+                        )}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Flight No</label>
@@ -1465,37 +1507,45 @@ export default function CustomersFlights() {
                                    if (parsedData.issuedDate) newData.issuedDate = parsedData.issuedDate;
                                    
                                    if (parsedData.segments && parsedData.segments.length > 0) {
-                                      const fallbackSeg = parsedData.segments[0];
-                                      newData.airline = fallbackSeg.airline || newData.airline;
-                                      newData.flightNo = fallbackSeg.flightNo || newData.flightNo;
-                                      newData.departureDate = fallbackSeg.departureDate || newData.departureDate;
-                                      newData.departureTime = fallbackSeg.departureTime || newData.departureTime;
-                                      newData.from = fallbackSeg.from || newData.from;
-                                      newData.to = fallbackSeg.to || newData.to;
-                                      newData.class = fallbackSeg.class || newData.class;
-                                      newData.airlineRef = fallbackSeg.airlineRef || newData.airlineRef;
-                                      newData.baggage = fallbackSeg.baggage || newData.baggage;
-                                      newData.status = fallbackSeg.status || newData.status;
-                                      newData.fareBasis = fallbackSeg.fareBasis || newData.fareBasis;
-                                      
-                                      const mapSeg = (s) => ({
-                                          departureDate: s.departureDate || '',
-                                          departureTime: s.departureTime || '',
-                                          arrivalDate: s.arrivalDate || '',
-                                          arrivalTime: s.arrivalTime || '',
-                                          from: s.from || '',
-                                          to: s.to || '',
-                                          airline: s.airline || '',
-                                          flightNo: s.flightNo || '',
-                                          duration: s.duration || '',
-                                          equipment: s.equipment || '',
-                                          departureTerminal: s.departureTerminal || '',
-                                          arrivalTerminal: s.arrivalTerminal || '',
-                                          airlineRef: s.airlineRef || '',
-                                          baggage: s.baggage || '',
-                                          status: s.status || '',
-                                          fareBasis: s.fareBasis || ''
-                                      });
+                                       const extractLogo = (fno) => {
+                                          if (!fno) return '';
+                                          const code = fno.trim().substring(0, 2).toUpperCase();
+                                          return /^[A-Z0-9]{2}$/.test(code) ? code : '';
+                                       };
+                                       
+                                       const fallbackSeg = parsedData.segments[0];
+                                       newData.airline = fallbackSeg.airline || newData.airline;
+                                       newData.airlineLogo = fallbackSeg.airlineLogo || extractLogo(fallbackSeg.flightNo) || newData.airlineLogo;
+                                       newData.flightNo = fallbackSeg.flightNo || newData.flightNo;
+                                       newData.departureDate = fallbackSeg.departureDate || newData.departureDate;
+                                       newData.departureTime = fallbackSeg.departureTime || newData.departureTime;
+                                       newData.from = fallbackSeg.from || newData.from;
+                                       newData.to = fallbackSeg.to || newData.to;
+                                       newData.class = fallbackSeg.class || newData.class;
+                                       newData.airlineRef = fallbackSeg.airlineRef || newData.airlineRef;
+                                       newData.baggage = fallbackSeg.baggage || newData.baggage;
+                                       newData.status = fallbackSeg.status || newData.status;
+                                       newData.fareBasis = fallbackSeg.fareBasis || newData.fareBasis;
+                                       
+                                       const mapSeg = (s) => ({
+                                           departureDate: s.departureDate || '',
+                                           departureTime: s.departureTime || '',
+                                           arrivalDate: s.arrivalDate || '',
+                                           arrivalTime: s.arrivalTime || '',
+                                           from: s.from || '',
+                                           to: s.to || '',
+                                           airline: s.airline || '',
+                                           airlineLogo: s.airlineLogo || extractLogo(s.flightNo) || '',
+                                           flightNo: s.flightNo || '',
+                                           duration: s.duration || '',
+                                           equipment: s.equipment || '',
+                                           departureTerminal: s.departureTerminal || '',
+                                           arrivalTerminal: s.arrivalTerminal || '',
+                                           airlineRef: s.airlineRef || '',
+                                           baggage: s.baggage || '',
+                                           status: s.status || '',
+                                           fareBasis: s.fareBasis || ''
+                                       });
                                       
                                       const newSegs = parsedData.segments.map(mapSeg);
                                       
@@ -1675,6 +1725,26 @@ export default function CustomersFlights() {
                                       value={segment.airline || ''}
                                       onChange={e => handleSegmentChange(index, 'airline', e.target.value)}
                                     />
+                                  </div>
+                                  <div className="col-span-1">
+                                    <label className="block text-[10px] font-bold text-amber-700/60 uppercase tracking-wider mb-1.5 ml-1 flex justify-between">
+                                      <span>Airline Logo Code</span>
+                                      <span className="text-[9px] font-normal lowercase">e.g. ek</span>
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                      <input 
+                                        placeholder="EK" 
+                                        maxLength="2"
+                                        className="w-full h-10 bg-white/50 border border-amber-200/50 px-3 rounded-xl text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-300 outline-none transition-all uppercase"
+                                        value={segment.airlineLogo || ''}
+                                        onChange={e => handleSegmentChange(index, 'airlineLogo', e.target.value.toUpperCase())}
+                                      />
+                                      {segment.airlineLogo && segment.airlineLogo.trim().length >= 2 && (
+                                         <div className="h-8 w-10 shrink-0 border border-amber-200/50 rounded overflow-hidden bg-white/80 shadow-sm flex items-center justify-center p-0.5">
+                                           <img src={`https://pics.avs.io/200/200/${segment.airlineLogo.trim().toUpperCase()}.png`} alt="logo" className="max-h-full max-w-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+                                         </div>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className="col-span-1">
                                     <label className="block text-[10px] font-bold text-amber-700/60 uppercase tracking-wider mb-1.5 ml-1">Flight No</label>
@@ -1865,6 +1935,26 @@ export default function CustomersFlights() {
                                       value={segment.airline || ''}
                                       onChange={e => handleReturnSegmentChange(index, 'airline', e.target.value)}
                                     />
+                                  </div>
+                                  <div className="col-span-1">
+                                    <label className="block text-[10px] font-bold text-amber-700/60 uppercase tracking-wider mb-1.5 ml-1 flex justify-between">
+                                      <span>Airline Logo Code</span>
+                                      <span className="text-[9px] font-normal lowercase">e.g. ek</span>
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                      <input 
+                                        placeholder="EK" 
+                                        maxLength="2"
+                                        className="w-full h-10 bg-white/50 border border-amber-200/50 px-3 rounded-xl text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-amber-500/20 focus:border-amber-300 outline-none transition-all uppercase"
+                                        value={segment.airlineLogo || ''}
+                                        onChange={e => handleReturnSegmentChange(index, 'airlineLogo', e.target.value.toUpperCase())}
+                                      />
+                                      {segment.airlineLogo && segment.airlineLogo.trim().length >= 2 && (
+                                         <div className="h-8 w-10 shrink-0 border border-amber-200/50 rounded overflow-hidden bg-white/80 shadow-sm flex items-center justify-center p-0.5">
+                                           <img src={`https://pics.avs.io/200/200/${segment.airlineLogo.trim().toUpperCase()}.png`} alt="logo" className="max-h-full max-w-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+                                         </div>
+                                      )}
+                                    </div>
                                   </div>
                                   <div className="col-span-1">
                                     <label className="block text-[10px] font-bold text-amber-700/60 uppercase tracking-wider mb-1.5 ml-1">Flight No</label>

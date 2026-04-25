@@ -1,7 +1,7 @@
 import { 
   LayoutDashboard, Bell, AlarmClock, Plane, 
   TrendingUp, Ticket, FileText, Calendar, 
-  Users, CalendarClock, LogOut,
+  Users, CalendarClock, LogOut, Map,
   ArrowUpCircle, ArrowDownCircle, CreditCard, Banknote,
   BookOpen, BarChart3, DollarSign, UserCog
 } from 'lucide-react';
@@ -19,6 +19,7 @@ const menuGroups = [
     title: 'OPERATIONS',
     items: [
       { label: 'Customers & Flights', icon: Plane },
+      { label: 'Tour Packages', icon: Map },
       { label: 'Passengers', icon: Users },
       { label: 'Employees', icon: UserCog },
       { label: 'Issue Ticket', icon: Ticket },
@@ -53,12 +54,29 @@ import { useNavigate, useLocation } from 'react-router-dom';
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const scrollRef = React.useRef(null);
+
+  // Restore scroll position on mount
+  React.useEffect(() => {
+    const savedScrollPos = sessionStorage.getItem('sidebar_scroll_pos');
+    if (savedScrollPos && scrollRef.current) {
+      scrollRef.current.scrollTop = parseInt(savedScrollPos, 10);
+    }
+  }, []);
+
+  // Save scroll position on scroll
+  const handleScroll = (e) => {
+    if (scrollRef.current) {
+      sessionStorage.setItem('sidebar_scroll_pos', scrollRef.current.scrollTop.toString());
+    }
+  };
 
   // Reverse map: route -> label
   const routeToLabel = Object.entries({
     'Dashboard': '/',
     'Notifications': '/notifications',
     'Reminders': '/reminders',
+    'Tour Packages': '/tour-packages',
     'Customers & Flights': '/customers-flights',
     'Passengers': '/passengers',
     'Employees': '/employees',
@@ -88,6 +106,7 @@ export default function Sidebar() {
     'Dashboard': '/',
     'Notifications': '/notifications',
     'Reminders': '/reminders',
+    'Tour Packages': '/tour-packages',
     'Customers & Flights': '/customers-flights',
     'Passengers': '/passengers',
     'Employees': '/employees',
@@ -108,7 +127,11 @@ export default function Sidebar() {
 
   return (
     <aside className="bg-[#101D42] text-gray-400 w-64 fixed left-0 top-0 bottom-0 h-full flex flex-col justify-between shrink-0 z-30">
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto p-4 custom-scrollbar">
+      <div 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 flex flex-col min-h-0 overflow-y-auto p-4 custom-scrollbar"
+      >
         {/* Logo Section */}
         <div className="flex items-center gap-3 mb-8 px-2 flex-shrink-0">
           <div className="bg-[#F3A91B] p-2 rounded-lg">

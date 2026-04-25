@@ -4,7 +4,7 @@ import { Plane, Download } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import { generateFlightPDF } from '../utils/generateFlightPDF';
-import QuickTicketGenerator from '../components/QuickTicketGenerator';
+
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -103,8 +103,6 @@ export default function IssueTicket() {
               </div>
             )}
           </div>
-          
-          <QuickTicketGenerator />
         </div>
       </div>
     </div>

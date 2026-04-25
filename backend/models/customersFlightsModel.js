@@ -21,7 +21,7 @@ exports.getCustomerFlightById = async (id) => {
 
 exports.addCustomerFlight = async (data) => {
   const [result] = await db.query(
-    'INSERT INTO CustomersFlights (passenger_id, passenger, passport, email, phone, invoiceNo, ticketNo, issuedDate, bookingRef, pnr, airlineRef, status, baggage, fareBasis, tripType, routeType, `from`, `to`, departureDate, departureTime, returnDate, returnTime, transitAirport, transitTime, outboundSecondFlightNo, returnSecondFlightNo, airline, flightNo, class, adults, handledBy, notes, segments, returnSegments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO CustomersFlights (passenger_id, passenger, passport, email, phone, invoiceNo, ticketNo, issuedDate, bookingRef, pnr, airlineRef, status, baggage, fareBasis, tripType, routeType, `from`, `to`, departureDate, departureTime, returnDate, returnTime, transitAirport, transitTime, outboundSecondFlightNo, returnSecondFlightNo, airline, airlineLogo, flightNo, class, adults, handledBy, notes, segments, returnSegments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       data.passenger_id || null,
       data.passenger,
@@ -50,6 +50,7 @@ exports.addCustomerFlight = async (data) => {
       data.outboundSecondFlightNo,
       data.returnSecondFlightNo,
       data.airline,
+      data.airlineLogo || null,
       data.flightNo,
       data.class,
       data.adults,
@@ -69,7 +70,7 @@ exports.deleteCustomerFlight = async (id) => {
 
 exports.updateCustomerFlight = async (id, data) => {
   await db.query(
-    'UPDATE CustomersFlights SET passenger_id=?, passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, issuedDate=?, bookingRef=?, pnr=?, airlineRef=?, status=?, baggage=?, fareBasis=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, returnDate=?, returnTime=?, transitAirport=?, transitTime=?, outboundSecondFlightNo=?, returnSecondFlightNo=?, airline=?, flightNo=?, class=?, adults=?, handledBy=?, notes=?, segments=?, returnSegments=? WHERE id=?',
+    'UPDATE CustomersFlights SET passenger_id=?, passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, issuedDate=?, bookingRef=?, pnr=?, airlineRef=?, status=?, baggage=?, fareBasis=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, returnDate=?, returnTime=?, transitAirport=?, transitTime=?, outboundSecondFlightNo=?, returnSecondFlightNo=?, airline=?, airlineLogo=?, flightNo=?, class=?, adults=?, handledBy=?, notes=?, segments=?, returnSegments=? WHERE id=?',
     [
       data.passenger_id || null,
       data.passenger,
@@ -98,6 +99,7 @@ exports.updateCustomerFlight = async (id, data) => {
       data.outboundSecondFlightNo,
       data.returnSecondFlightNo,
       data.airline,
+      data.airlineLogo || null,
       data.flightNo,
       data.class,
       data.adults,
