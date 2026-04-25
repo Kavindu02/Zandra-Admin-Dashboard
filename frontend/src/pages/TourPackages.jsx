@@ -4,6 +4,8 @@ import { Plus, Trash2, Image as ImageIcon, Map, FileText, Send, Download } from 
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import { generateTourPackagePDF } from '../utils/generateTourPackagePDF';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const ImageUploader = ({ imgKey, label, formData, handleImageChange, removeImage }) => (
   <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:border-orange-500/50 transition-colors relative min-h-[160px]">
@@ -45,11 +47,19 @@ const TourPackages = () => {
     image2Preview: null,
     image3Preview: null,
     image4Preview: null,
+    coverTitle: '',
+    coverSubtitle: 'EXCLUSIVELY FOR ',
+    coverDuration: '',
+    coverLocation: '',
+    coverHeroImageb64: null,
+    coverHeroImagePreview: null,
     quickFacts: '',
     duration: '',
     landPackageCost: '',
     airFareCost: '',
     bgColor: '#ffffff',
+    themeColor: '#C8102E',
+    accentColor: '#CC0000',
     hotels: [{ city: '', name: '', nights: '', rating: '' }],
     includes: [''],
     excludes: [''],
@@ -72,6 +82,8 @@ const TourPackages = () => {
     delete dataToSave.image2Preview;
     delete dataToSave.image3Preview;
     delete dataToSave.image4Preview;
+    delete dataToSave.coverHeroImageb64;
+    delete dataToSave.coverHeroImagePreview;
     
     localStorage.setItem('zandra_tour_package_form', JSON.stringify(dataToSave));
   }, [formData]);
@@ -82,12 +94,42 @@ const TourPackages = () => {
     const previewUrl = URL.createObjectURL(file);
     
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData(prev => ({
-        ...prev,
-        [`${imgKey}b64`]: reader.result,
-        [`${imgKey}Preview`]: previewUrl
-      }));
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Compress as JPEG to significantly reduce PDF size and fix lag
+        const compressedB64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        setFormData(prev => ({
+          ...prev,
+          [`${imgKey}b64`]: compressedB64,
+          [`${imgKey}Preview`]: previewUrl
+        }));
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
   };
@@ -153,6 +195,31 @@ const TourPackages = () => {
           <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 xl:col-span-8 space-y-6">
           
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2"><Map size={16} className="text-orange-500"/> Cover Page Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ImageUploader imgKey="coverHeroImage" label="Upload Hero Image" formData={formData} handleImageChange={handleImageChange} removeImage={removeImage} />
+              <div className="space-y-4">
+                 <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cover Title (e.g. CHINA)</label>
+                   <input className="w-full h-11 bg-[#f8fafc] border border-gray-200 px-4 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-orange-500/20" value={formData.coverTitle} onChange={e => setFormData({...formData, coverTitle: e.target.value})} />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cover Subtitle</label>
+                   <input className="w-full h-11 bg-[#f8fafc] border border-gray-200 px-4 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-orange-500/20" value={formData.coverSubtitle} onChange={e => setFormData({...formData, coverSubtitle: e.target.value})} />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Duration (Cover)</label>
+                   <input placeholder="e.g. 5 NIGHTS & 6 DAYS" className="w-full h-11 bg-[#f8fafc] border border-gray-200 px-4 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-orange-500/20" value={formData.coverDuration} onChange={e => setFormData({...formData, coverDuration: e.target.value})} />
+                 </div>
+                 <div>
+                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Location (Cover)</label>
+                   <input placeholder="e.g. BEIJING" className="w-full h-11 bg-[#f8fafc] border border-gray-200 px-4 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-orange-500/20" value={formData.coverLocation} onChange={e => setFormData({...formData, coverLocation: e.target.value})} />
+                 </div>
+              </div>
+            </div>
+          </div>
+
           {/* Top Images */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h3 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2"><Map size={16} className="text-orange-500"/> Cover Images (Top)</h3>
@@ -177,22 +244,23 @@ const TourPackages = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Quick Facts / Overview (Multiple Paragraphs allowed)</label>
-                <textarea 
-                  rows={4}
-                  placeholder="Bangkok, Experience the vibrant capital city..."
-                  className="w-full bg-[#f8fafc] border border-gray-200 px-4 py-3 rounded-xl text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-300 outline-none transition-all resize-none"
-                  value={formData.quickFacts}
-                  onChange={e => setFormData({...formData, quickFacts: e.target.value})}
-                />
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Quick Facts / Overview (Rich Text)</label>
+                <div className="bg-white rounded-xl overflow-hidden border border-gray-200">
+                  <ReactQuill 
+                    theme="snow"
+                    value={formData.quickFacts || ''}
+                    onChange={(val) => setFormData({...formData, quickFacts: val})}
+                    modules={{ toolbar: [['bold', 'italic'], [{'list': 'bullet'}], ['clean']] }}
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Duration Title</label>
                   <input 
-                    placeholder="e.g. Special tour program for 3 nights 4 days"
+                    placeholder="e.g. Special tour program..."
                     className="w-full h-11 bg-[#f8fafc] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-300 outline-none transition-all"
                     value={formData.duration}
                     onChange={e => setFormData({...formData, duration: e.target.value})}
@@ -201,18 +269,22 @@ const TourPackages = () => {
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Background Color</label>
                   <div className="flex bg-[#f8fafc] border border-gray-200 rounded-xl overflow-hidden h-11 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-300 transition-all">
-                    <input 
-                      type="color"
-                      className="h-full w-12 cursor-pointer border-none p-0 outline-none bg-transparent"
-                      value={formData.bgColor}
-                      onChange={e => setFormData({...formData, bgColor: e.target.value})}
-                    />
-                    <input 
-                      type="text"
-                      className="w-full h-full px-3 text-sm text-gray-700 bg-transparent outline-none uppercase"
-                      value={formData.bgColor}
-                      onChange={e => setFormData({...formData, bgColor: e.target.value})}
-                    />
+                    <input type="color" className="h-full w-12 cursor-pointer border-none p-0 outline-none bg-transparent" value={formData.bgColor} onChange={e => setFormData({...formData, bgColor: e.target.value})} />
+                    <input type="text" className="w-full h-full px-3 text-sm text-gray-700 bg-transparent outline-none uppercase" value={formData.bgColor} onChange={e => setFormData({...formData, bgColor: e.target.value})} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Theme Color</label>
+                  <div className="flex bg-[#f8fafc] border border-gray-200 rounded-xl overflow-hidden h-11 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-300 transition-all">
+                    <input type="color" className="h-full w-12 cursor-pointer border-none p-0 outline-none bg-transparent" value={formData.themeColor} onChange={e => setFormData({...formData, themeColor: e.target.value})} />
+                    <input type="text" className="w-full h-full px-3 text-sm text-gray-700 bg-transparent outline-none uppercase" value={formData.themeColor} onChange={e => setFormData({...formData, themeColor: e.target.value})} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Accent Color (Red)</label>
+                  <div className="flex bg-[#f8fafc] border border-gray-200 rounded-xl overflow-hidden h-11 focus-within:ring-2 focus-within:ring-orange-500/20 focus-within:border-orange-300 transition-all">
+                    <input type="color" className="h-full w-12 cursor-pointer border-none p-0 outline-none bg-transparent" value={formData.accentColor} onChange={e => setFormData({...formData, accentColor: e.target.value})} />
+                    <input type="text" className="w-full h-full px-3 text-sm text-gray-700 bg-transparent outline-none uppercase" value={formData.accentColor} onChange={e => setFormData({...formData, accentColor: e.target.value})} />
                   </div>
                 </div>
               </div>

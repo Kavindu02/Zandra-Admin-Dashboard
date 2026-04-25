@@ -74,13 +74,82 @@ exports.getDashboardSummary = async () => {
     "SELECT title, message, isRead, created_at FROM notifications ORDER BY created_at DESC, id DESC LIMIT 1"
   );
 
+  // Sync ProfitTracker to make sure data is up to date (we can trigger this via a simple DB insert/update directly or just rely on what is there) 
+  // Let's grab the totals for the current year
+  const currentYear = new Date().getFullYear();
+
+  // 1. Total Income & Expenses
+  const totalsRow = await safeRow(`
+    SELECT 
+      SUM(sell) as totalIncome,
+      SUM(cost) as totalExpenses,
+      COUNT(id) as totalBookings
+    FROM ProfitTracker WHERE isDeleted = 0 AND YEAR(created_at) = ?
+  `, [currentYear]);
+
+  // 2. Monthly Stats for Charts
+  const [monthlyRows] = await db.query(`
+    SELECT 
+      MONTH(created_at) as monthIndex,
+      SUM(sell) as income,
+      SUM(cost) as expenses,
+      SUM(gross) as profit,
+      COUNT(id) as bookings
+    FROM ProfitTracker
+    WHERE isDeleted = 0 AND YEAR(created_at) = ?
+    GROUP BY MONTH(created_at)
+  `, [currentYear]);
+
+  // Transform to array of 12 months
+  const monthlyStats = Array.from({ length: 12 }, (_, i) => {
+    const monthData = monthlyRows.find(row => row.monthIndex === i + 1);
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return {
+      name: monthNames[i],
+      income: Number(monthData?.income || 0),
+      expenses: Number(monthData?.expenses || 0),
+      profit: Number(monthData?.profit || 0),
+      bookings: Number(monthData?.bookings || 0)
+    };
+  });
+
+  // 3. Top Destinations
+  const [destRows] = await db.query(`
+    SELECT \`to\` as destination, COUNT(*) as count 
+    FROM CustomersFlights 
+    WHERE \`to\` IS NOT NULL AND \`to\` != '' AND YEAR(created_at) = ?
+    GROUP BY \`to\` 
+    ORDER BY count DESC 
+    LIMIT 5
+  `, [currentYear]).catch(() => {
+    // fallback if created_at is missing on CustomersFlights
+    return db.query(`
+      SELECT \`to\` as destination, COUNT(*) as count 
+      FROM CustomersFlights 
+      WHERE \`to\` IS NOT NULL AND \`to\` != '' 
+      GROUP BY \`to\` 
+      ORDER BY count DESC 
+      LIMIT 5
+    `);
+  });
+
+  const topDestinations = (destRows || []).map(r => ({
+    name: r.destination,
+    value: Number(r.count)
+  }));
+
   return {
-    totalCustomers,
-    todaysFlights,
-    pendingReminders,
-    unreadAlerts,
-    totalInvoices,
-    flightsIn48h,
+    totalCustomers: totalCustomers || 0,
+    todaysFlights: todaysFlights || 0,
+    pendingReminders: pendingReminders || 0,
+    unreadAlerts: unreadAlerts || 0,
+    totalInvoices: totalInvoices || 0,
+    flightsIn48h: flightsIn48h || 0,
+    totalBookings: Number(totalsRow?.totalBookings || 0),
+    totalIncome: Number(totalsRow?.totalIncome || 0),
+    totalExpenses: Number(totalsRow?.totalExpenses || 0),
+    monthlyStats,
+    topDestinations,
     recentPassenger,
     recentReminder,
     settings,

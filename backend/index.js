@@ -5,11 +5,43 @@ dotenv.config();
 
 
 const pool = require('./models/db');
+const bcrypt = require('bcryptjs');
+
 pool.getConnection()
-  .then(() => console.log('Database connected!'))
+  .then(async (connection) => {
+    console.log('Database connected!');
+    
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS auth_users (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          username VARCHAR(255) NOT NULL UNIQUE,
+          password_hash VARCHAR(255) NOT NULL,
+          role ENUM('admin', 'employee') DEFAULT 'employee',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
+      const [users] = await connection.query('SELECT COUNT(*) as count FROM auth_users');
+      if (users[0].count === 0) {
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash('admin123', salt);
+        await connection.query(
+          "INSERT INTO auth_users (username, password_hash, role) VALUES (?, ?, 'admin')",
+          ['admin', hash]
+        );
+        console.log('Default Admin created: admin / admin123');
+      }
+    } catch (err) {
+      console.error('Failed to setup users table:', err);
+    } finally {
+      connection.release();
+    }
+  })
   .catch(err => console.error('Database connection failed:', err));
 
 const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const customersFlightsRoutes = require('./routes/customersFlightsRoutes');
 const notificationsRoutes = require('./routes/notificationsRoutes');
@@ -32,6 +64,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/receivables', receivableRoutes);
 app.use('/api/payables', payableRoutes);
