@@ -21,56 +21,7 @@ exports.getCustomerFlightById = async (id) => {
 
 exports.addCustomerFlight = async (data) => {
   const [result] = await db.query(
-    'INSERT INTO CustomersFlights (passenger_id, passenger, passport, email, phone, invoiceNo, ticketNo, issuedDate, bookingRef, pnr, airlineRef, status, baggage, fareBasis, tripType, routeType, `from`, `to`, departureDate, departureTime, returnDate, returnTime, transitAirport, transitTime, outboundSecondFlightNo, returnSecondFlightNo, airline, airlineLogo, flightNo, class, adults, handledBy, notes, segments, returnSegments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [
-      data.passenger_id || null,
-      data.passenger,
-      data.passport,
-      data.email,
-      data.phone,
-      data.invoiceNo,
-      data.ticketNo,
-      data.issuedDate || null,
-      data.bookingRef,
-      data.pnr,
-      data.airlineRef,
-      data.status,
-      data.baggage,
-      data.fareBasis,
-      data.tripType,
-      data.routeType,
-      data.from,
-      data.to,
-      data.departureDate || null,
-      data.departureTime,
-      data.returnDate || null,
-      data.returnTime,
-      data.transitAirport,
-      data.transitTime,
-      data.outboundSecondFlightNo,
-      data.returnSecondFlightNo,
-      data.airline,
-      data.airlineLogo || null,
-      data.flightNo,
-      data.class,
-      data.adults,
-      data.handledBy,
-      data.notes,
-      JSON.stringify(data.segments || []),
-      JSON.stringify(data.returnSegments || [])
-    ]
-  );
-  return { id: result.insertId, ...data };
-};
-
-exports.deleteCustomerFlight = async (id) => {
-  await db.query('DELETE FROM CustomersFlights WHERE id = ?', [id]);
-};
-
-
-exports.updateCustomerFlight = async (id, data) => {
-  await db.query(
-    'UPDATE CustomersFlights SET passenger_id=?, passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, issuedDate=?, bookingRef=?, pnr=?, airlineRef=?, status=?, baggage=?, fareBasis=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, returnDate=?, returnTime=?, transitAirport=?, transitTime=?, outboundSecondFlightNo=?, returnSecondFlightNo=?, airline=?, airlineLogo=?, flightNo=?, class=?, adults=?, handledBy=?, notes=?, segments=?, returnSegments=? WHERE id=?',
+    'INSERT INTO CustomersFlights (passenger_id, passenger, passport, email, phone, invoiceNo, ticketNo, issuedDate, bookingRef, pnr, airlineRef, status, baggage, fareBasis, tripType, routeType, `from`, `to`, departureDate, departureTime, returnDate, returnTime, transitAirport, transitTime, outboundSecondFlightNo, returnSecondFlightNo, airline, airlineLogo, flightNo, class, adults, handledBy, notes, segments, returnSegments, travelDate, destination, invoiceStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       data.passenger_id || null,
       data.passenger,
@@ -107,8 +58,66 @@ exports.updateCustomerFlight = async (id, data) => {
       data.notes,
       JSON.stringify(data.segments || []),
       JSON.stringify(data.returnSegments || []),
+      data.travelDate || null,
+      data.destination || null,
+      data.invoiceStatus || 'Pending'
+    ]
+  );
+  return { id: result.insertId, ...data };
+};
+
+exports.deleteCustomerFlight = async (id) => {
+  await db.query('DELETE FROM CustomersFlights WHERE id = ?', [id]);
+};
+
+
+exports.updateCustomerFlight = async (id, data) => {
+  await db.query(
+    'UPDATE CustomersFlights SET passenger_id=?, passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, issuedDate=?, bookingRef=?, pnr=?, airlineRef=?, status=?, baggage=?, fareBasis=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, returnDate=?, returnTime=?, transitAirport=?, transitTime=?, outboundSecondFlightNo=?, returnSecondFlightNo=?, airline=?, airlineLogo=?, flightNo=?, class=?, adults=?, handledBy=?, notes=?, segments=?, returnSegments=?, travelDate=?, destination=?, invoiceStatus=? WHERE id=?',
+    [
+      data.passenger_id || null,
+      data.passenger,
+      data.passport,
+      data.email,
+      data.phone,
+      data.invoiceNo,
+      data.ticketNo,
+      data.issuedDate || null,
+      data.bookingRef,
+      data.pnr,
+      data.airlineRef,
+      data.status,
+      data.baggage,
+      data.fareBasis,
+      data.tripType,
+      data.routeType,
+      data.from,
+      data.to,
+      data.departureDate || null,
+      data.departureTime,
+      data.returnDate || null,
+      data.returnTime,
+      data.transitAirport,
+      data.transitTime,
+      data.outboundSecondFlightNo,
+      data.returnSecondFlightNo,
+      data.airline,
+      data.airlineLogo || null,
+      data.flightNo,
+      data.class,
+      data.adults,
+      data.handledBy,
+      data.notes,
+      JSON.stringify(data.segments || []),
+      JSON.stringify(data.returnSegments || []),
+      data.travelDate || null,
+      data.destination || null,
+      data.invoiceStatus || 'Pending',
       id
     ]
   );
   return { id, ...data };
+};
+exports.updateInvoiceStatus = async (id, status) => {
+  await db.query('UPDATE CustomersFlights SET invoiceStatus = ? WHERE id = ?', [status, id]);
 };

@@ -74,6 +74,7 @@ const ensureProfitTrackerTable = async () => {
       employeeShare DECIMAL(15,2) NULL,
       status VARCHAR(80) NULL,
       handledBy VARCHAR(255) DEFAULT '',
+      qty INT DEFAULT 1,
       isManual TINYINT(1) DEFAULT 0,
       isDeleted TINYINT(1) DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -90,53 +91,7 @@ const ensureProfitTrackerTable = async () => {
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN isManual TINYINT(1) DEFAULT 0');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN isDeleted TINYINT(1) DEFAULT 0');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN currencies VARCHAR(120) NULL');
-};
-
-const syncFromCustomersFlights = async () => {
-  await db.query(
-    `INSERT INTO ProfitTracker (customerFlightId, invoiceNo, passenger, handledBy, status, isDeleted, isManual)
-     SELECT cf.id, cf.invoiceNo, cf.passenger, cf.handledBy, cf.status, 0, 0
-     FROM CustomersFlights cf
-     WHERE NOT EXISTS (
-         SELECT 1 FROM ProfitTracker pt WHERE pt.customerFlightId = cf.id
-       )`
-  );
-
-  await db.query(
-    `UPDATE ProfitTracker pt
-     JOIN CustomersFlights cf ON pt.customerFlightId = cf.id
-     SET pt.customerFlightId = cf.id,
-         pt.passenger = cf.passenger,
-         pt.invoiceNo = cf.invoiceNo,
-       pt.handledBy = cf.handledBy,
-       pt.status = cf.status
-     WHERE pt.isDeleted = 0`
-  );
-
-  // Keep financial values empty for auto-synced rows until manually edited.
-  await db.query(
-    `UPDATE ProfitTracker
-     SET paymentMethod = NULL,
-         sellCurrency = NULL,
-         costCurrency = NULL,
-         exchangeRate = NULL,
-         currencies = NULL,
-         sell = NULL,
-         cost = NULL,
-         gross = NULL,
-         companySharePercent = NULL,
-         employeeSharePercent = NULL,
-         companyShare = NULL,
-         employeeShare = NULL
-     WHERE isDeleted = 0 AND isManual = 0`
-  );
-
-  await db.query(
-    `UPDATE ProfitTracker pt
-     LEFT JOIN CustomersFlights cf ON pt.customerFlightId = cf.id
-     SET pt.isDeleted = 1
-     WHERE cf.id IS NULL`
-  );
+  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN qty INT DEFAULT 1');
 };
 
 const buildSummary = (records) => {
@@ -157,9 +112,10 @@ const buildSummary = (records) => {
 
 exports.getProfitTrackerData = async () => {
   await ensureProfitTrackerTable();
-  await syncFromCustomersFlights();
+  // syncFromCustomersFlights() call removed to avoid cluttering with non-invoiced records
 
-  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE isDeleted = 0 ORDER BY id DESC');
+  // Only show records that are manually marked (created by Invoice Generator or manually added)
+  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE isDeleted = 0 AND isManual = 1 ORDER BY id DESC');
   const summary = buildSummary(rows);
 
   return {
@@ -181,6 +137,7 @@ exports.updateProfitRecord = async (id, data) => {
   const nextPaymentMethod = data.paymentMethod ?? existing.paymentMethod;
   const nextStatus = existing.status;
   const nextHandledBy = existing.handledBy;
+  const nextQty = data.qty ?? existing.qty ?? 1;
   const nextSellCurrency = data.sellCurrency ?? existing.sellCurrency;
   const nextCostCurrency = data.costCurrency ?? existing.costCurrency;
   const nextExchangeRate = toNullableNumber(data.exchangeRate ?? existing.exchangeRate);
@@ -212,6 +169,7 @@ exports.updateProfitRecord = async (id, data) => {
          employeeShare = ?,
          status = ?,
          handledBy = ?,
+         qty = ?,
          isManual = 1,
          isDeleted = 0
      WHERE id = ?`,
@@ -230,6 +188,7 @@ exports.updateProfitRecord = async (id, data) => {
       parts.employeeShare,
       nextStatus,
       nextHandledBy,
+      nextQty,
       id
     ]
   );
@@ -241,6 +200,24 @@ exports.updateProfitRecord = async (id, data) => {
 exports.deleteProfitRecord = async (id) => {
   await ensureProfitTrackerTable();
   await db.query('UPDATE ProfitTracker SET isDeleted = 1 WHERE id = ?', [id]);
+};
+
+exports.getProfitByCustomerFlightId = async (customerFlightId) => {
+  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE customerFlightId = ?', [customerFlightId]);
+  return rows[0];
+};
+
+exports.getProfitByInvoiceNo = async (invoiceNo) => {
+  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE invoiceNo = ? AND isDeleted = 0 ORDER BY id DESC LIMIT 1', [invoiceNo]);
+  return rows[0];
+};
+
+exports.updateStatusByInvoiceNo = async (invoiceNo, status) => {
+  await ensureProfitTrackerTable();
+  await db.query(
+    'UPDATE ProfitTracker SET status = ? WHERE invoiceNo = ? AND isDeleted = 0',
+    [status, invoiceNo]
+  );
 };
 
 exports.createProfitRecord = async (data) => {
@@ -264,8 +241,8 @@ exports.createProfitRecord = async (data) => {
       invoiceNo, passenger, paymentMethod, sellCurrency, costCurrency, 
       exchangeRate, currencies, sell, cost, gross, 
       companySharePercent, employeeSharePercent, companyShare, employeeShare, 
-      status, handledBy, isManual
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      status, handledBy, qty, isManual
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.invoiceNo || 'MANUAL-' + Date.now(),
       data.passenger || 'Manual Entry',
@@ -283,6 +260,7 @@ exports.createProfitRecord = async (data) => {
       parts.employeeShare,
       data.status || 'Paid',
       data.handledBy || 'ZANDRA TRAVELERS',
+      data.qty || 1,
       1
     ]
   );

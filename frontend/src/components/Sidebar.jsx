@@ -23,6 +23,7 @@ const menuGroups = [
       { label: 'Passengers', icon: Users },
       { label: 'Employees', icon: UserCog },
       { label: 'Issue Ticket', icon: Ticket },
+      { label: 'Invoice Generator', icon: FileText },
       { label: 'Flight Calendar', icon: Calendar },
     ]
   },
@@ -92,6 +93,7 @@ export default function Sidebar() {
     'Issue Ticket': '/issue-ticket',
 
     'Flight Calendar': '/flight-calendar',
+    'Invoice Generator': '/invoice-generator',
     'Profit Tracker': '/profit-tracker',
     'Expenses': '/expenses',
     'Receivables': '/receivables',
@@ -120,7 +122,7 @@ export default function Sidebar() {
     'Passengers': '/passengers',
     'Employees': '/employees',
     'Issue Ticket': '/issue-ticket',
-
+    'Invoice Generator': '/invoice-generator',
     'Flight Calendar': '/flight-calendar',
     'Profit Tracker': '/profit-tracker',
     'Expenses': '/expenses',

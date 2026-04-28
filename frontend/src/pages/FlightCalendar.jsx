@@ -193,7 +193,19 @@ export default function FlightCalendar() {
     flightRows.forEach((record, index) => {
       const traveler = pickTravelerName(record);
 
+      // Attempt to get departure date from first segment if available
+      let segmentDepDate = null;
+      if (record.segments) {
+        try {
+          const segs = typeof record.segments === 'string' ? JSON.parse(record.segments) : record.segments;
+          if (Array.isArray(segs) && segs.length > 0 && segs[0].departureDate) {
+            segmentDepDate = parseLocalDate(segs[0].departureDate);
+          }
+        } catch (e) {}
+      }
+
       const departureDay =
+        segmentDepDate ||
         pickFirstDateFromKeys(record, ['departureDate', 'departure_date', 'outboundDate', 'date']) ||
         pickFirstDateFromCompositeKeys(record, ['departure', 'outbound']);
 
@@ -206,7 +218,19 @@ export default function FlightCalendar() {
         });
       }
 
+      // Attempt to get return date from first return segment if available
+      let segmentRetDate = null;
+      if (record.returnSegments) {
+        try {
+          const segs = typeof record.returnSegments === 'string' ? JSON.parse(record.returnSegments) : record.returnSegments;
+          if (Array.isArray(segs) && segs.length > 0 && segs[0].departureDate) {
+            segmentRetDate = parseLocalDate(segs[0].departureDate);
+          }
+        } catch (e) {}
+      }
+
       const returnDay =
+        segmentRetDate ||
         pickFirstDateFromKeys(record, [
           'returnDate',
           'return_date',

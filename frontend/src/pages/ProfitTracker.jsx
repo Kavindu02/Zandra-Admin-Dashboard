@@ -28,7 +28,8 @@ export default function ProfitTracker() {
     companySharePercent: 60,
     employeeSharePercent: 40,
     status: 'Paid',
-    handledBy: 'ZANDRA TRAVELERS'
+    handledBy: 'ZANDRA TRAVELERS',
+    qty: 1
   });
 
   const fetchProfitData = async () => {
@@ -82,7 +83,8 @@ export default function ProfitTracker() {
       companySharePercent: 60,
       employeeSharePercent: 40,
       status: 'Paid',
-      handledBy: 'ZANDRA TRAVELERS'
+      handledBy: 'ZANDRA TRAVELERS',
+      qty: 1
     });
     setIsModalOpen(true);
   };
@@ -127,7 +129,7 @@ export default function ProfitTracker() {
   };
 
   const handleExport = () => {
-    const headers = ["Invoice", "Passenger", "Payment Method", "Currency", "Sell", "Cost", "Gross Profit", "Company Share", "Employee Share", "Status", "Handled By"];
+    const headers = ["Invoice", "Passenger", "Payment Method", "Currency", "Sell", "Cost", "Gross Profit", "Company Share", "Employee Share", "Handled By"];
     
     const csvContent = [
       headers.join(','),
@@ -141,7 +143,6 @@ export default function ProfitTracker() {
         row.gross || 0,
         row.companyShare || 0,
         row.employeeShare || 0,
-        row.status || 'Pending',
         `"${row.handledBy || '-'}"`
       ].join(','))
     ].join('\n');
@@ -258,11 +259,11 @@ export default function ProfitTracker() {
                       <th className="px-4 md:px-6 py-4">Payment</th>
                       <th className="px-4 md:px-6 py-4">Currencies</th>
                       <th className="px-4 md:px-6 py-4 text-right">Sell</th>
+                      <th className="px-4 md:px-6 py-4 text-center">QTY</th>
                       <th className="px-4 md:px-6 py-4 text-right">Cost</th>
                       <th className="px-4 md:px-6 py-4 text-right">Gross</th>
                       <th className="px-4 md:px-6 py-4 text-right">Co. Share</th>
                       <th className="px-4 md:px-6 py-4 text-right">Emp. Share</th>
-                      <th className="px-4 md:px-6 py-4">Status</th>
                       <th className="px-4 md:px-6 py-4">Handled</th>
                       <th className="px-4 md:px-6 py-4 text-right pr-6 md:pr-12">Actions</th>
                     </tr>
@@ -289,27 +290,27 @@ export default function ProfitTracker() {
                           </td>
                           <td className="px-4 md:px-6 py-4 text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter whitespace-nowrap">{row.currencies || '-'}</td>
                           <td className="px-4 md:px-6 py-4 text-right font-semibold text-gray-500 text-xs md:text-sm">{Number(row.sell || 0).toLocaleString()}</td>
+                          <td className="px-4 md:px-6 py-4 text-center font-bold text-gray-400 text-xs">{row.qty || 1}</td>
                           <td className="px-4 md:px-6 py-4 text-right font-semibold text-gray-500 text-xs md:text-sm">{Number(row.cost || 0).toLocaleString()}</td>
                           <td className="px-4 md:px-6 py-4 text-right">
                             <span className="font-black text-emerald-600 text-xs md:text-sm">{Number(row.gross || 0).toLocaleString()}</span>
                           </td>
                           <td className="px-4 md:px-6 py-4 text-right font-bold text-blue-600/70 text-xs md:text-sm">{Number(row.companyShare || 0).toLocaleString()}</td>
                           <td className="px-4 md:px-6 py-4 text-right font-bold text-violet-600/70 text-xs md:text-sm">{Number(row.employeeShare || 0).toLocaleString()}</td>
-                          <td className="px-4 md:px-6 py-4">
-                            <span className={`px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-wider whitespace-nowrap ${
-                              row.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 
-                              row.status === 'Pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-500'
-                            }`}>
-                              {row.status || 'Pending'}
-                            </span>
-                          </td>
                           <td className="px-4 md:px-6 py-4 font-bold text-gray-400 text-[9px] md:text-[10px] uppercase truncate max-w-[120px]">{row.handledBy || '-'}</td>
                           <td className="px-4 md:px-6 py-4 text-right pr-4 md:pr-6">
                             <div className="flex items-center justify-end gap-1 md:gap-2">
-                              <button onClick={() => handleOpenEditModal(row)} className="p-1.5 md:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                                <Pencil size={14} />
+                              <button 
+                                onClick={() => handleOpenEditModal(row)} 
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-all border border-blue-100"
+                              >
+                                <Pencil size={12} />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Edit</span>
                               </button>
-                              <button onClick={() => handleDelete(row.id)} className="p-1.5 md:p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                              <button 
+                                onClick={() => handleDelete(row.id)} 
+                                className="p-1.5 md:p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                              >
                                 <Trash2 size={14} />
                               </button>
                             </div>
@@ -376,17 +377,6 @@ export default function ProfitTracker() {
                          <option>Card</option>
                       </select>
                    </div>
-                   <div className="space-y-1">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Status</label>
-                      <select 
-                        value={formData.status} 
-                        onChange={(e) => setFormData({...formData, status: e.target.value})}
-                        className="w-full h-11 bg-gray-50 border border-transparent rounded-xl px-4 text-sm font-bold text-gray-700 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-                      >
-                         <option>Paid</option>
-                         <option>Pending</option>
-                      </select>
-                   </div>
                 </div>
 
                 {/* Financials */}
@@ -444,14 +434,26 @@ export default function ProfitTracker() {
                    </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Handled By</label>
-                  <input 
-                    type="text" 
-                    value={formData.handledBy} 
-                    onChange={(e) => setFormData({...formData, handledBy: e.target.value})}
-                    className="w-full h-11 bg-gray-50 border border-transparent rounded-xl px-4 text-sm font-bold text-gray-700 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-                  />
+                <div className="grid grid-cols-2 gap-5">
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Handled By</label>
+                      <input 
+                        type="text" 
+                        value={formData.handledBy} 
+                        onChange={(e) => setFormData({...formData, handledBy: e.target.value})}
+                        className="w-full h-11 bg-gray-50 border border-transparent rounded-xl px-4 text-sm font-bold text-gray-700 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                      />
+                   </div>
+                   <div className="space-y-1">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Quantity (QTY)</label>
+                      <input 
+                        type="number" 
+                        value={formData.qty} 
+                        onChange={(e) => setFormData({...formData, qty: Number(e.target.value)})}
+                        className="w-full h-11 bg-gray-50 border border-transparent rounded-xl px-4 text-sm font-bold text-gray-700 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                        min="1"
+                      />
+                   </div>
                 </div>
               </div>
 

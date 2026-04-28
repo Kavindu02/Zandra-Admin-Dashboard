@@ -56,6 +56,12 @@ const payrollRoutes = require('./routes/payrollRoutes');
 const geminiRoutes = require('./routes/geminiRoutes');
 const accountingRoutes = require('./routes/accountingRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes');
+const emailRoutes = require('./routes/emailRoutes');
+const scheduleReminders = require('./scripts/reminderScheduler');
+
+// Initialize schedulers
+scheduleReminders();
 
 
 const app = express();
@@ -104,6 +110,8 @@ app.use('/api/profittracker', profitTrackerRoutes);
 app.use('/api/passengers', passengerRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use('/api/accounting', accountingRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use('/api/email', emailRoutes);
 
 
 const PORT = Number(process.env.PORT) || 5000;

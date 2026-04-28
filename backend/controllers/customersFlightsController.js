@@ -1,5 +1,6 @@
 const CustomersFlights = require('../models/customersFlightsModel');
 const Notifications = require('../models/notificationsModel');
+const ProfitTracker = require('../models/profitTrackerModel');
 
 exports.getCustomersFlights = async (req, res) => {
   try {
@@ -57,6 +58,15 @@ exports.updateCustomerFlight = async (req, res) => {
   try {
     const existing = await CustomersFlights.getCustomerFlightById(req.params.id);
     const data = await CustomersFlights.updateCustomerFlight(req.params.id, req.body);
+
+    // Sync invoiceStatus to ProfitTracker if changed
+    if (data.invoiceNo && req.body.invoiceStatus && req.body.invoiceStatus !== existing.invoiceStatus) {
+      try {
+        await ProfitTracker.updateStatusByInvoiceNo(data.invoiceNo, req.body.invoiceStatus);
+      } catch (profitError) {
+        console.error('Failed to sync status to ProfitTracker:', profitError.message);
+      }
+    }
 
     try {
       const labels = {

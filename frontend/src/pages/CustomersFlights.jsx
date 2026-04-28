@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { Plane, Search, Plus, Download, Eye, Edit2, Trash2, Mail, MapPin, Clock, Users } from 'lucide-react';
+import { Plane, Search, Plus, Download, Eye, Edit2, Trash2, Mail, MapPin, Clock, Users, FileText } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import AirportSelect from '../components/AirportSelect';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import { parseTicketFile } from '../utils/parseTicket';
+import DelayModal from '../components/DelayModal';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function CustomersFlights() {
@@ -50,7 +51,10 @@ export default function CustomersFlights() {
     ],
     returnSegments: [
       { from: '', to: '', departureDate: '', departureTime: '', arrivalDate: '', arrivalTime: '', duration: '', airline: '', flightNo: '', airlineRef: '', baggage: '', status: 'Pending', fareBasis: '', equipment: '', departureTerminal: '', arrivalTerminal: '' }
-    ]
+    ],
+    travelDate: '',
+    destination: '',
+    invoiceStatus: 'Pending'
   };
 
   const tripTypeOptions = ['One Way', 'Round Trip', 'Multi City'];
@@ -145,7 +149,10 @@ export default function CustomersFlights() {
       returnSegments,
       route: customer.route || { from, to, type: `${tripType} • ${routeType}` },
       airlineLogo: customer.airlineLogo || '',
-      adults: Number(customer.adults) || 1
+      adults: Number(customer.adults) || 1,
+      travelDate: customer.travelDate || '',
+      destination: customer.destination || '',
+      invoiceStatus: customer.invoiceStatus || 'Pending'
     };
   };
 
@@ -156,7 +163,12 @@ export default function CustomersFlights() {
   const [passengers, setPassengers] = useState([]);
   const [formData, setFormData] = useState(initialFormData);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
   const fileInputRef = useRef(null);
+  const [sendingEmail, setSendingEmail] = useState(null); // id of customer being emailed
+  const [isDelayModalOpen, setIsDelayModalOpen] = useState(false);
+  const [delayCustomer, setDelayCustomer] = useState(null);
+  const [delayTimes, setDelayTimes] = useState({ newDepartureTime: '', newArrivalTime: '' });
 
   // Fetch customers and passengers from backend
   useEffect(() => {
@@ -679,9 +691,40 @@ export default function CustomersFlights() {
     }
   };
 
+  const handleSendEmail = async (customer, delayInfo = null) => {
+    if (!customer.email) {
+      alert('This customer does not have an email address.');
+      return;
+    }
+
+    setSendingEmail(customer.id);
+    try {
+      await axios.post(`${API_BASE_URL}/api/email/send-itinerary`, { 
+        customer,
+        delayInfo 
+      });
+      alert(delayInfo ? `Delay notification sent to ${customer.email}!` : `Itinerary sent to ${customer.email} successfully!`);
+      if (delayInfo) setIsDelayModalOpen(false);
+    } catch (err) {
+      console.error('Email error:', err);
+      alert(err.response?.data?.error || 'Failed to send email. Ensure SMTP is configured in the backend .env file.');
+    } finally {
+      setSendingEmail(null);
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-[#E5E7EB]">
       <Sidebar />
+      <DelayModal 
+        isOpen={isDelayModalOpen}
+        onClose={() => setIsDelayModalOpen(false)}
+        customer={delayCustomer}
+        delayTimes={delayTimes}
+        setDelayTimes={setDelayTimes}
+        handleSendEmail={handleSendEmail}
+        sendingEmail={sendingEmail}
+      />
       
       <div className="flex-1 ml-64">
         {/* Top Header Section */}
@@ -712,6 +755,28 @@ export default function CustomersFlights() {
               >
                 <Plus size={18} /> Add Customer
               </button>
+              {selectedIds.length > 0 && (
+                <button 
+                  onClick={async () => {
+                    if (window.confirm(`Generate invoice for ${selectedIds.length} selected record(s)?`)) {
+                      try {
+                        const res = await axios.post(`${API_BASE_URL}/api/invoices/generate`, {
+                          customerFlightIds: selectedIds,
+                          status: 'Pending' // Default to pending
+                        });
+                        alert(`Invoice ${res.data.invoiceNo} generated successfully!`);
+                        setSelectedIds([]);
+                        fetchCustomers();
+                      } catch (err) {
+                        alert(`Failed to generate invoice: ${err.response?.data?.error || err.message}`);
+                      }
+                    }
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-opacity-90 transition cursor-pointer"
+                >
+                  <FileText size={18} /> Generate Invoice ({selectedIds.length})
+                </button>
+              )}
             </div>
           </div>
 
@@ -773,6 +838,20 @@ export default function CustomersFlights() {
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-[#ECEFF3] border-b border-gray-200 text-gray-500 text-xs uppercase font-semibold">
                     <tr>
+                      <th className="px-6 py-4">
+                        <input 
+                          type="checkbox" 
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(customers.map(c => c.id));
+                            } else {
+                              setSelectedIds([]);
+                            }
+                          }}
+                          checked={selectedIds.length === customers.length && customers.length > 0}
+                          className="rounded border-gray-300 text-[#101D42] focus:ring-[#101D42]"
+                        />
+                      </th>
                       <th className="px-6 py-4">Passenger</th>
                       <th className="px-6 py-4">Invoice No</th>
                       <th className="px-6 py-4">Route</th>
@@ -786,7 +865,21 @@ export default function CustomersFlights() {
                     {customers
                       .filter(c => statusFilter === 'All' ? true : c.status === statusFilter)
                       .map((customer) => (
-                      <tr key={customer.id} className="hover:bg-gray-50 transition">
+                      <tr key={customer.id} className={`hover:bg-gray-50 transition ${selectedIds.includes(customer.id) ? 'bg-orange-50/30' : ''}`}>
+                        <td className="px-6 py-4">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedIds.includes(customer.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedIds([...selectedIds, customer.id]);
+                              } else {
+                                setSelectedIds(selectedIds.filter(id => id !== customer.id));
+                              }
+                            }}
+                            className="rounded border-gray-300 text-[#101D42] focus:ring-[#101D42]"
+                          />
+                        </td>
                         <td className="px-6 py-4">
                           <div className="font-semibold text-gray-800">{customer.passenger}</div>
                           <div className="text-gray-400 text-xs">{customer.passport}</div>
@@ -803,9 +896,14 @@ export default function CustomersFlights() {
                           <div className="text-gray-500">{getDepartureParts(customer).time}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="bg-orange-50 text-orange-500 px-3 py-1 rounded-full text-xs font-semibold border border-orange-100">
-                            {customer.status}
-                          </span>
+                          <div className="flex flex-col gap-1.5">
+                            <span className="bg-orange-50 text-orange-600 px-3 py-0.5 rounded-full text-[10px] font-bold border border-orange-100 inline-flex items-center justify-center w-fit">
+                              TICKET: {customer.status}
+                            </span>
+                            <span className={`${customer.invoiceStatus === 'Approve' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-blue-50 text-blue-600 border-blue-100'} px-3 py-0.5 rounded-full text-[10px] font-bold border inline-flex items-center justify-center w-fit`}>
+                              INV: {customer.invoiceStatus}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{customer.handledBy}</td>
                         <td className="px-6 py-4">
@@ -1104,13 +1202,42 @@ export default function CustomersFlights() {
                         </div>
                       </div>
 
-                      <a
-                        href={`mailto:${customer.email}`}
-                        className="flex items-center gap-1 text-[#253A73] hover:text-[#101D42] font-medium"
-                      >
-                        <Mail size={16} />
-                        <span className="text-sm">Send</span>
-                      </a>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setDelayCustomer(customer);
+                            const first = customer.segments?.[0] || {};
+                            const last = customer.segments?.[customer.segments.length-1] || first;
+                            setDelayTimes({ 
+                              newDepartureTime: first.departureTime || customer.departureTime || '',
+                              newArrivalTime: last.arrivalTime || ''
+                            });
+                            setIsDelayModalOpen(true);
+                          }}
+                          className="flex items-center gap-1 text-orange-600 hover:text-orange-700 font-medium cursor-pointer"
+                        >
+                          <Clock size={16} />
+                          <span className="text-sm">Delay</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleSendEmail(customer)}
+                          disabled={sendingEmail === customer.id}
+                          className={`flex items-center gap-1 font-medium transition ${sendingEmail === customer.id ? 'text-gray-400' : 'text-[#253A73] hover:text-[#101D42] cursor-pointer'}`}
+                        >
+                          {sendingEmail === customer.id ? (
+                            <div className="flex items-center gap-1">
+                               <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                               <span className="text-sm">Sending...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <Mail size={16} />
+                              <span className="text-sm">Send</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1123,242 +1250,8 @@ export default function CustomersFlights() {
       {/* Add/Edit Customer Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`w-full shadow-xl relative flex flex-col overflow-hidden max-h-[90vh] ${editId !== null ? 'max-w-4xl rounded-3xl border border-white/80 bg-[#F3F4F6] p-7' : 'max-w-2xl rounded-2xl bg-white p-8'}`}>
-            {editId !== null ? (
-              <>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="absolute top-5 right-7 text-gray-500 hover:text-gray-700 text-3xl leading-none"
-                >
-                  &times;
-                </button>
+          <div className="w-full max-w-4xl shadow-xl relative flex flex-col overflow-hidden max-h-[90vh] rounded-3xl border border-white/80 bg-white p-8">
 
-                <h3 className="text-3xl font-bold text-[#1F2B3F] mb-5">Customer Details</h3>
-
-                <div className="flex items-center gap-4 mb-6 rounded-2xl bg-white border border-[#E2E6EE] px-5 py-4">
-                  <div className="w-16 h-16 rounded-full bg-[#E6EAF1] text-[#40516E] flex items-center justify-center text-3xl font-bold">
-                    {(formData.passenger || 'C').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xl font-semibold text-[#1F2B3F] leading-tight truncate">{formData.passenger || 'Customer'}</div>
-                    <div className="text-sm text-[#8FA0BA] mt-1 truncate">{formData.passport || '-'}</div>
-                  </div>
-                  <div className="ml-4">
-                    <CustomSelect 
-                      value={formData.status}
-                      options={['Pending', 'Confirmed', 'Cancelled']}
-                      onChange={val => setFormData({...formData, status: val})}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex-1 min-h-0 overflow-y-auto pr-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Email</label>
-                      <input type="email" placeholder="email@example.com" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Phone</label>
-                      <input placeholder="+94 7X XXX XXXX" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Invoice No</label>
-                      <input placeholder="ZT-INV-XXXXXXX" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.invoiceNo} onChange={e => setFormData({...formData, invoiceNo: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Ticket No</label>
-                      <input placeholder="" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.ticketNo} onChange={e => setFormData({...formData, ticketNo: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Issued Date</label>
-                      <input type="date" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.issuedDate} onChange={e => setFormData({...formData, issuedDate: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Booking Ref</label>
-                      <input placeholder="Booking Ref" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.bookingRef} onChange={e => setFormData({...formData, bookingRef: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">PNR</label>
-                      <input placeholder="6-char PNR" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.pnr} onChange={e => setFormData({...formData, pnr: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Airline Ref</label>
-                      <input placeholder="Airline Ref" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.airlineRef} onChange={e => setFormData({...formData, airlineRef: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Baggage</label>
-                      <input placeholder="e.g. 30kg" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.baggage} onChange={e => setFormData({...formData, baggage: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Fare Basis</label>
-                      <input placeholder="e.g. YOW" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.fareBasis} onChange={e => setFormData({...formData, fareBasis: e.target.value})} />
-                    </div>
-                    <div>
-                      <CustomSelect 
-                        label="Trip Type"
-                        value={formData.tripType}
-                        options={tripTypeOptions}
-                        onChange={handleTripTypeChange}
-                      />
-                    </div>
-                    <div>
-                      <CustomSelect 
-                        label="Route Type"
-                        value={formData.routeType}
-                        options={routeTypeOptions}
-                        onChange={handleRouteTypeChange}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">From</label>
-                      <AirportSelect 
-                        placeholder="Departure airport" 
-                        className="w-full h-11 bg-white border border-gray-200 pl-10 pr-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none" 
-                        value={formData.from} 
-                        onChange={val => setFormData({...formData, from: val})} 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">To</label>
-                      <AirportSelect 
-                        placeholder="Arrival airport" 
-                        className="w-full h-11 bg-white border border-gray-200 pl-10 pr-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none" 
-                        value={formData.to} 
-                        onChange={val => setFormData({...formData, to: val})} 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Departure Date</label>
-                      <input type="date" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.departureDate} onChange={e => setFormData({...formData, departureDate: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Departure Time</label>
-                      <div className="relative group">
-                        <Clock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors pointer-events-none" />
-                        <input type="time" className="w-full h-11 bg-white border border-gray-200 pl-10 pr-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.departureTime} onChange={e => setFormData({...formData, departureTime: e.target.value})} />
-                      </div>
-                    </div>
-                    {hasReturnLeg && (
-                      <>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Return Date</label>
-                          <input type="date" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.returnDate} onChange={e => setFormData({...formData, returnDate: e.target.value})} />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Return Time</label>
-                          <div className="relative group">
-                            <Clock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors pointer-events-none" />
-                            <input type="time" className="w-full h-11 bg-white border border-gray-200 pl-10 pr-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.returnTime} onChange={e => setFormData({...formData, returnTime: e.target.value})} />
-                          </div>
-                        </div>
-                      </>
-                    )}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Airline</label>
-                      <div className="flex gap-2">
-                        <input placeholder="Name (e.g. Emirates)" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none" value={formData.airline} onChange={e => setFormData({...formData, airline: e.target.value})} />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1 flex justify-between">
-                         <span className="truncate">Airline IATA Code (for Logo)</span>
-                         <span className="text-[10px] text-gray-400 font-normal">e.g. EK</span>
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input 
-                          placeholder="EK" 
-                          maxLength="2"
-                          className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none uppercase" 
-                          value={formData.airlineLogo} 
-                          onChange={e => setFormData({...formData, airlineLogo: e.target.value.toUpperCase()})} 
-                        />
-                        {formData.airlineLogo && formData.airlineLogo.trim().length >= 2 && (
-                           <div className="h-10 w-12 shrink-0 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm flex items-center justify-center p-1">
-                             <img src={`https://pics.avs.io/200/200/${formData.airlineLogo.trim().toUpperCase()}.png`} alt="logo" className="max-h-full max-w-full object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
-                           </div>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Flight No</label>
-                      <input placeholder="EK-501" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none" value={formData.flightNo} onChange={e => setFormData({...formData, flightNo: e.target.value})} />
-                    </div>
-                    <div>
-                      <CustomSelect 
-                        label="Class"
-                        value={formData.class}
-                        options={['Economy', 'Business', 'First']}
-                        onChange={val => setFormData({...formData, class: val})}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Adults</label>
-                      <input type="number" min="1" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all outline-none" value={formData.adults} onChange={e => setFormData({...formData, adults: e.target.value})} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Handled By</label>
-                      <input placeholder="Select employee" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.handledBy} onChange={e => setFormData({...formData, handledBy: e.target.value})} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Notes</label>
-                      <textarea placeholder="Additional notes..." className="w-full min-h-[120px] bg-white border border-gray-200 p-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium resize-none" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
-                    </div>
-                    {hasTransitRoute && (
-                      <div className="md:col-span-2 rounded-2xl border border-amber-200 bg-[#FFF9E8] p-4">
-                        <h4 className="text-sm font-semibold text-[#B35A00] mb-3">Transit Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Transit Airport</label>
-                            <div className="relative group">
-                              <AirportSelect 
-                                placeholder="Transit airport" 
-                                className="w-full h-11 bg-white border border-gray-200 pl-10 pr-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" 
-                                value={formData.transitAirport} 
-                                onChange={val => setFormData({...formData, transitAirport: val})} 
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Transit Time</label>
-                            <div className="relative group">
-                              <Clock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors pointer-events-none" />
-                              <input placeholder="e.g. 2h 30m" className="w-full h-11 bg-white border border-gray-200 pl-10 pr-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.transitTime} onChange={e => setFormData({...formData, transitTime: e.target.value})} />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Outbound 2nd Flight No</label>
-                            <input placeholder="2nd outbound flight no" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.outboundSecondFlightNo} onChange={e => setFormData({...formData, outboundSecondFlightNo: e.target.value})} />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Return 2nd Flight No</label>
-                            <input placeholder="2nd return flight no" className="w-full h-11 bg-white border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.returnSecondFlightNo} onChange={e => setFormData({...formData, returnSecondFlightNo: e.target.value})} />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 mt-7 pt-4 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="px-8 py-3 border border-gray-200 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUpdateSubmit}
-                    className="px-8 py-3 bg-[#101D42] text-white rounded-xl font-semibold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all cursor-pointer"
-                  >
-                    Update Customer
-                  </button>
-                </div>
-              </>
-            ) : (
               <>
                 <button
                   type="button"
@@ -1368,7 +1261,7 @@ export default function CustomersFlights() {
                   &times;
                 </button>
 
-                <h3 className="text-2xl font-bold text-[#1F2B3F] mb-6">Add New Customer</h3>
+                <h3 className="text-2xl font-bold text-[#1F2B3F] mb-6">{editId !== null ? 'Edit Customer Details' : 'Add New Customer'}</h3>
                 {/* Tab Navigation */}
                 <div className="flex bg-[#F3F4F6] p-1.5 rounded-2xl mb-8">
                   {['Passenger', 'Flight Info', 'Extra'].map(tab => (
@@ -1502,6 +1395,7 @@ export default function CustomersFlights() {
                                  setFormData(prev => {
                                    const newData = { ...prev };
                                    if (parsedData.passenger) newData.passenger = parsedData.passenger;
+                                   if (parsedData.email) newData.email = parsedData.email;
                                    if (parsedData.pnr) newData.pnr = parsedData.pnr;
                                    if (parsedData.ticketNo) newData.ticketNo = parsedData.ticketNo;
                                    if (parsedData.issuedDate) newData.issuedDate = parsedData.issuedDate;
@@ -2053,8 +1947,47 @@ export default function CustomersFlights() {
                     {activeTab === 'Extra' && (
                       <div className="space-y-6 px-1 pb-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Handled By</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Tour Executive (Handled By)</label>
                           <input placeholder="Select employee" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.handledBy} onChange={e => setFormData({...formData, handledBy: e.target.value})} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Destination</label>
+                            <input placeholder="Destination" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.destination} onChange={e => setFormData({...formData, destination: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Travel Date</label>
+                            <input type="date" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.travelDate} onChange={e => setFormData({...formData, travelDate: e.target.value})} />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Date Issued</label>
+                            <input type="date" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.issuedDate} onChange={e => setFormData({...formData, issuedDate: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Phone Number</label>
+                            <input placeholder="Phone Number" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Email Address</label>
+                            <input placeholder="Email Address" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Invoice No</label>
+                            <input placeholder="ZT-INV-XXXXXXX" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.invoiceNo} onChange={e => setFormData({...formData, invoiceNo: e.target.value})} />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <CustomSelect 
+                              label="Invoice Status"
+                              value={formData.invoiceStatus}
+                              options={['Pending', 'Approve']}
+                              onChange={val => setFormData({...formData, invoiceStatus: val})}
+                            />
+                          </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Notes</label>
@@ -2096,13 +2029,12 @@ export default function CustomersFlights() {
                         onClick={handleSubmit} 
                         className="flex-1 py-3 bg-[#F59E0B] text-white rounded-xl font-semibold shadow-lg shadow-orange-500/20 hover:bg-[#d98b06] transition-all cursor-pointer"
                       >
-                        Add Customer
+                        {editId !== null ? 'Update Customer' : 'Add Customer'}
                       </button>
                     )}
                   </div>
                 </form>
               </>
-            )}
           </div>
         </div>
       )}

@@ -25,11 +25,13 @@ CRITICAL RULES TO FOLLOW BLINDLY:
 5. "issuedDate", "departureDate", "arrivalDate": MUST be STRICTLY converted to 'YYYY-MM-DD' (e.g. '2026-04-05'). Do not include time inside date fields.
 6. "departureTime", "arrivalTime": MUST be STRICTLY 'HH:mm' (e.g. '06:20').
 7. "pnr" or Booking Ref: Is an exact 5 or 6 alphanumeric character string (e.g. '8XC2JL'). Do not include slashes.
-8. NEVER hallucinate. If you are missing a piece of data within a segment, return an empty string "" rather than guessing a wrong text block.
+8. "email": Extract the passenger's email address if present in the text.
+9. NEVER hallucinate. If you are missing a piece of data within a segment, return an empty string "" rather than guessing a wrong text block.
 
 Your JSON output MUST exactly match this format without any other explanatory text:
 {
   "passenger": "string",
+  "email": "string",
   "pnr": "string",
   "ticketNo": "string", 
   "issuedDate": "YYYY-MM-DD",
