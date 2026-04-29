@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { Plane, Search, Plus, Download, Eye, Edit2, Trash2, Mail, MapPin, Clock, Users, FileText } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
@@ -588,7 +589,7 @@ export default function CustomersFlights() {
       link.click();
     } catch (err) {
       console.error('Failed to generate PDF ticket:', err);
-      alert('Could not generate PDF. Make sure template.pdf is accessible in the public folder.');
+      toast.error('Could not generate PDF. Make sure template.pdf is accessible in the public folder.');
     }
   };
 
@@ -644,16 +645,18 @@ export default function CustomersFlights() {
     if (editId !== null) {
       try {
         await axios.put(`${API_BASE_URL}/api/customersflights/${editId}`, payload);
+        toast.success('Customer updated successfully!');
         await fetchCustomers();
       } catch (err) {
-        alert('Failed to update customer');
+        toast.error('Failed to update customer');
       }
     } else {
       try {
         await axios.post(`${API_BASE_URL}/api/customersflights`, payload);
+        toast.success('Customer added successfully!');
         await fetchCustomers();
       } catch (err) {
-        alert('Failed to add customer');
+        toast.error('Failed to add customer');
       }
     }
     closeModal();
@@ -672,10 +675,11 @@ export default function CustomersFlights() {
 
     try {
       await axios.put(`${API_BASE_URL}/api/customersflights/${editId}`, payload);
+      toast.success('Customer updated successfully!');
       await fetchCustomers();
       closeModal();
     } catch (err) {
-      alert('Failed to update customer');
+      toast.error('Failed to update customer');
     }
   };
 
@@ -684,16 +688,17 @@ export default function CustomersFlights() {
     if (window.confirm('Are you sure you want to delete this customer?')) {
       try {
         await axios.delete(`${API_BASE_URL}/api/customersflights/${id}`);
+        toast.success('Customer deleted successfully');
         fetchCustomers();
       } catch (err) {
-        alert('Failed to delete customer');
+        toast.error('Failed to delete customer');
       }
     }
   };
 
   const handleSendEmail = async (customer, delayInfo = null) => {
     if (!customer.email) {
-      alert('This customer does not have an email address.');
+      toast.error('This customer does not have an email address.');
       return;
     }
 
@@ -703,11 +708,11 @@ export default function CustomersFlights() {
         customer,
         delayInfo 
       });
-      alert(delayInfo ? `Delay notification sent to ${customer.email}!` : `Itinerary sent to ${customer.email} successfully!`);
+      toast.success(delayInfo ? `Delay notification sent to ${customer.email}!` : `Itinerary sent to ${customer.email} successfully!`);
       if (delayInfo) setIsDelayModalOpen(false);
     } catch (err) {
       console.error('Email error:', err);
-      alert(err.response?.data?.error || 'Failed to send email. Ensure SMTP is configured in the backend .env file.');
+      toast.error(err.response?.data?.error || 'Failed to send email. Ensure SMTP is configured in the backend .env file.');
     } finally {
       setSendingEmail(null);
     }
@@ -764,11 +769,11 @@ export default function CustomersFlights() {
                           customerFlightIds: selectedIds,
                           status: 'Pending' // Default to pending
                         });
-                        alert(`Invoice ${res.data.invoiceNo} generated successfully!`);
+                        toast.success(`Invoice ${res.data.invoiceNo} generated successfully!`);
                         setSelectedIds([]);
                         fetchCustomers();
                       } catch (err) {
-                        alert(`Failed to generate invoice: ${err.response?.data?.error || err.message}`);
+                        toast.error(`Failed to generate invoice: ${err.response?.data?.error || err.message}`);
                       }
                     }
                   }}
@@ -1467,11 +1472,11 @@ export default function CustomersFlights() {
                                    }
                                    return newData;
                                  });
-                                 alert('E-Ticket data successfully loaded! Form is filled.');
-                               } catch (err) {
-                                 console.error(err);
-                                 alert(err.message || 'Failed to parse file.');
-                               }
+                                   toast.success('E-Ticket data successfully loaded! Form is filled.');
+                                 } catch (err) {
+                                   console.error(err);
+                                   toast.error(err.message || 'Failed to parse file.');
+                                 }
                                e.target.value = ''; 
                             }}
                           />

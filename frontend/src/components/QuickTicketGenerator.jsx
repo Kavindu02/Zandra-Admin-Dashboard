@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import { Upload, Download, Plane, Clock, Trash2, Plus } from 'lucide-react';
 import { parseTicketFile } from '../utils/parseTicket';
 import { generateFlightPDF } from '../utils/generateFlightPDF';
@@ -116,10 +117,10 @@ export default function QuickTicketGenerator() {
         }
         return newData;
       });
-      alert('E-Ticket read successfully! Please review the details before generating the PDF.');
+      toast.success('E-Ticket read successfully! Please review the details before generating the PDF.');
     } catch(err) {
       console.error(err);
-      alert(err.message || 'Error occurred during parse');
+      toast.error(err.message || 'Error occurred during parse');
     }
     e.target.value = '';
   };
@@ -127,7 +128,7 @@ export default function QuickTicketGenerator() {
   const handleGenerate = (e) => {
     e.preventDefault();
     if (!formData.passenger && !formData.passenger_id) {
-        alert("Please specify or select a passenger!");
+        toast.error("Please specify or select a passenger!");
         return;
     }
     generateFlightPDF(formData);

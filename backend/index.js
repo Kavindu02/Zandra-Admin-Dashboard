@@ -22,15 +22,28 @@ pool.getConnection()
         )
       `);
       
-      const [users] = await connection.query('SELECT COUNT(*) as count FROM auth_users');
-      if (users[0].count === 0) {
+      const [users] = await connection.query('SELECT * FROM auth_users WHERE username = ?', ['admin']);
+      if (users.length > 0) {
+        // Upgrade existing admin to Sandaru
         const salt = await bcrypt.genSalt(10);
-        const hash = await bcrypt.hash('admin123', salt);
+        const hash = await bcrypt.hash('Sa111111*', salt);
         await connection.query(
-          "INSERT INTO auth_users (username, password_hash, role) VALUES (?, ?, 'admin')",
-          ['admin', hash]
+          "UPDATE auth_users SET username = ?, password_hash = ? WHERE username = 'admin'",
+          ['Sandaru', hash]
         );
-        console.log('Default Admin created: admin / admin123');
+        console.log('Admin user updated to Sandaru');
+      } else {
+        // Check if Sandaru already exists
+        const [sandaru] = await connection.query('SELECT * FROM auth_users WHERE username = ?', ['Sandaru']);
+        if (sandaru.length === 0) {
+          const salt = await bcrypt.genSalt(10);
+          const hash = await bcrypt.hash('Sa111111*', salt);
+          await connection.query(
+            "INSERT INTO auth_users (username, password_hash, role) VALUES (?, ?, 'admin')",
+            ['Sandaru', hash]
+          );
+          console.log('Default Admin created: Sandaru / Sa111111*');
+        }
       }
     } catch (err) {
       console.error('Failed to setup users table:', err);

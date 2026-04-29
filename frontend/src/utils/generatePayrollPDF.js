@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { toast } from 'react-hot-toast';
 
 export const generatePayrollPDF = async (payrollData, month) => {
   try {
@@ -105,6 +106,6 @@ export const generatePayrollPDF = async (payrollData, month) => {
     link.click();
   } catch (error) {
     console.error("Error generating Payroll PDF:", error);
-    alert("Failed to generate PDF Report.");
+    toast.error("Failed to generate PDF Report.");
   }
 };

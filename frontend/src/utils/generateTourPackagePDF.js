@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { toast } from 'react-hot-toast';
 
 export const generateTourPackagePDF = async (pkgData) => {
   try {
@@ -519,7 +520,7 @@ export const generateTourPackagePDF = async (pkgData) => {
     link.click();
 
   } catch (err) {
-    console.error("Error generating Tour Package PDF:", err);
-    alert(err.message || "Failed to generate PDF");
+    console.error(err);
+    toast.error(err.message || "Failed to generate PDF");
   }
 };

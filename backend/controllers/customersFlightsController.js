@@ -1,6 +1,7 @@
 const CustomersFlights = require('../models/customersFlightsModel');
 const Notifications = require('../models/notificationsModel');
 const ProfitTracker = require('../models/profitTrackerModel');
+const { sendEmailInternal } = require('./emailController');
 
 exports.getCustomersFlights = async (req, res) => {
   try {
@@ -13,7 +14,21 @@ exports.getCustomersFlights = async (req, res) => {
 
 exports.addCustomerFlight = async (req, res) => {
   try {
+    console.log('Adding new customer:', req.body.passenger);
     const data = await CustomersFlights.addCustomerFlight(req.body);
+
+    // Send automatic email to customer
+    if (data.email) {
+      console.log('Attempting to send automatic email to:', data.email);
+      try {
+        await sendEmailInternal(data);
+        console.log('Automatic email sent successfully!');
+      } catch (emailError) {
+        console.error('Failed to send automatic welcome email:', emailError.message);
+      }
+    } else {
+      console.log('No email provided for automatic sending.');
+    }
 
     try {
       await Notifications.addNotification({
@@ -31,6 +46,7 @@ exports.addCustomerFlight = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.deleteCustomerFlight = async (req, res) => {
   try {

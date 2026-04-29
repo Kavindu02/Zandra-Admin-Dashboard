@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import { 
   FileText, 
@@ -41,9 +42,10 @@ const InvoiceManager = () => {
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       await axios.put(`${API_BASE_URL}/api/invoices/${id}/status`, { status: newStatus });
+      toast.success(`Status updated to ${newStatus}`);
       fetchInvoices();
     } catch (err) {
-      alert('Failed to update status');
+      toast.error('Failed to update status');
     }
   };
 
@@ -51,9 +53,10 @@ const InvoiceManager = () => {
     if (window.confirm('Are you sure you want to delete this invoice?')) {
       try {
         await axios.delete(`${API_BASE_URL}/api/invoices/${id}`);
+        toast.success('Invoice deleted successfully');
         fetchInvoices();
       } catch (err) {
-        alert('Failed to delete invoice');
+        toast.error('Failed to delete invoice');
       }
     }
   };

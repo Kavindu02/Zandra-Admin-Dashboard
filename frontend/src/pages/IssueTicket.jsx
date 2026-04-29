@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import { Plane, Download } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
@@ -36,7 +37,7 @@ export default function IssueTicket() {
       await generateFlightPDF(customer);
     } catch (err) {
       console.error('Failed to generate PDF ticket:', err);
-      alert('Could not generate PDF. Make sure template.pdf is accessible in the public folder.');
+      toast.error('Could not generate PDF. Make sure template.pdf is accessible in the public folder.');
     }
   };
 

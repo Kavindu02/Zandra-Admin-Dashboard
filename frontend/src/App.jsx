@@ -26,12 +26,14 @@ import ProfitAndLoss from './pages/ProfitAndLoss.jsx';
 import BalanceSheet from './pages/BalanceSheet.jsx';
 import TourPackages from './pages/TourPackages.jsx';
 import UserManagement from './pages/UserManagement.jsx';
+import { Toaster } from 'react-hot-toast';
 import './index.css';
 
 export default function App() {
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
+        <Toaster position="top-right" reverseOrder={false} />
         <Routes>
           <Route path="/login" element={<Login />} />
           

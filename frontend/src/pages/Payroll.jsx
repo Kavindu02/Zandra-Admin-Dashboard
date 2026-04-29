@@ -4,6 +4,7 @@ import {
   ChevronDown, Plus, FileDown, Pencil, Trash2, Settings
 } from 'lucide-react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import AddPayrollModal from '../components/AddPayrollModal';
@@ -44,10 +45,10 @@ export default function Payroll() {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       await axios.delete(`${apiUrl}/api/payroll/${id}`);
       fetchPayrolls();
-      alert('Payroll record deleted successfully');
+      toast.success('Payroll record deleted successfully');
     } catch (error) {
       console.error('Failed to delete payroll:', error);
-      alert('Failed to delete record');
+      toast.error('Failed to delete record');
     }
   };
 

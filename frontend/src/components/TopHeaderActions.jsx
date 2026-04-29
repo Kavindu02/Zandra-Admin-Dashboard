@@ -1,23 +1,46 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { Bell, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 export default function TopHeaderActions() {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const prevCountRef = useRef(0);
 
   const fetchUnreadCount = useCallback(async () => {
     try {
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await axios.get(`${apiUrl}/api/notifications`);
       const list = Array.isArray(res.data) ? res.data : [];
-      const unread = list.filter((item) => Number(item.isRead) !== 1).length;
+      const unreadList = list.filter((item) => Number(item.isRead) !== 1);
+      const unread = unreadList.length;
+      
+      if (unread > prevCountRef.current && prevCountRef.current !== 0) {
+        const latest = unreadList[0];
+        if (latest) {
+          toast((t) => (
+            <div className="flex flex-col gap-1 cursor-pointer" onClick={() => {
+              toast.dismiss(t.id);
+              navigate('/notifications');
+            }}>
+              <span className="font-bold text-sm text-[#101D42]">{latest.title || 'New Notification'}</span>
+              <span className="text-xs text-gray-600 line-clamp-2">{latest.message}</span>
+            </div>
+          ), {
+            icon: '🔔',
+            duration: 5000,
+          });
+        }
+      }
+      
+      prevCountRef.current = unread;
       setUnreadCount(unread);
     } catch (error) {
       console.error('Failed to load unread notifications:', error);
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -59,19 +82,6 @@ export default function TopHeaderActions() {
           </span>
         )}
       </button>
-
-      <button
-        type="button"
-        onClick={() => navigate('/notifications')}
-        className="cursor-pointer hover:text-gray-800"
-        aria-label="Open messages"
-      >
-        <MessageSquare size={20} />
-      </button>
-
-      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
-        Z
-      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toast } from 'react-hot-toast';
 import { X, Calendar, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 
@@ -114,7 +115,7 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
 
   const handleSave = async () => {
     if (!formData.employeeId) {
-      alert('Please select an employee');
+      toast.error('Please select an employee');
       return;
     }
 
@@ -129,11 +130,11 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
       if (record?.id) {
         // Update existing record
         await axios.put(`${apiUrl}/api/payroll/${record.id}`, payload);
-        alert('Payroll record updated successfully!');
+        toast.success('Payroll record updated successfully!');
       } else {
         // Save new record
         await axios.post(`${apiUrl}/api/payroll`, payload);
-        alert('Payroll record saved successfully!');
+        toast.success('Payroll record saved successfully!');
       }
 
       onClose();
@@ -141,7 +142,7 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
       window.dispatchEvent(new CustomEvent('payroll-updated'));
     } catch (error) {
       console.error('Failed to save payroll:', error);
-      alert('Failed to save payroll record. Please try again.');
+      toast.error('Failed to save payroll record. Please try again.');
     } finally {
       setIsSaving(false);
     }

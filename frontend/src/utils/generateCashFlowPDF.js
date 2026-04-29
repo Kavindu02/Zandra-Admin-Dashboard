@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { toast } from 'react-hot-toast';
 
 export const generateCashFlowPDF = async (cashFlowData, year) => {
   try {
@@ -162,6 +163,6 @@ export const generateCashFlowPDF = async (cashFlowData, year) => {
 
   } catch (error) {
     console.error("Error generating Cash Flow PDF:", error);
-    alert("Failed to generate PDF Report. Please check the console for details.");
+    toast.error("Failed to generate PDF Report. Please check the console for details.");
   }
 };

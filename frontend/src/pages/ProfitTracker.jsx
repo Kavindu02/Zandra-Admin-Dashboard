@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { toast } from 'react-hot-toast';
 import { Download, Pencil, RefreshCw, Search, Trash2, Plus, X, Calculator, DollarSign, Briefcase, Users } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
@@ -109,10 +110,11 @@ export default function ProfitTracker() {
       } else {
         await axios.post(`${API_BASE_URL}/api/profittracker`, formData);
       }
+      toast.success('Record saved successfully');
       setIsModalOpen(false);
       fetchProfitData();
     } catch (error) {
-      alert('Failed to save record');
+      toast.error('Failed to save record');
     } finally {
       setIsSaving(false);
     }
@@ -122,9 +124,10 @@ export default function ProfitTracker() {
     if (!window.confirm('Delete this record?')) return;
     try {
       await axios.delete(`${API_BASE_URL}/api/profittracker/${id}`);
+      toast.success('Record deleted successfully');
       fetchProfitData();
     } catch (error) {
-      alert('Failed to delete record');
+      toast.error('Failed to delete record');
     }
   };
 
@@ -162,9 +165,10 @@ export default function ProfitTracker() {
     setIsRecalculating(true);
     try {
       await axios.post(`${API_BASE_URL}/api/profittracker/recalculate`);
+      toast.success('Recalculation successful');
       fetchProfitData();
     } catch (error) {
-      alert('Recalculation failed');
+      toast.error('Recalculation failed');
     } finally {
       setIsRecalculating(false);
     }

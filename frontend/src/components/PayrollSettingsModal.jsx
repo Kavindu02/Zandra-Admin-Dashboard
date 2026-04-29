@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
 import { X, Save, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
 
@@ -39,7 +40,7 @@ export default function PayrollSettingsModal({ isOpen, onClose, onSave }) {
       onClose();
     } catch (error) {
       console.error('Failed to update payroll settings:', error);
-      alert('Failed to update settings');
+      toast.error('Failed to update settings');
     } finally {
       setIsSaving(false);
     }

@@ -14,13 +14,29 @@ export const generateInvoicePDF = async (invoiceData, showBankInfo = true) => {
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   
   // Load images
-  const logoBytes = await fetch('/zandralogo.png').then(res => res.arrayBuffer());
-  const sign1Bytes = await fetch('/sign1.jpeg').then(res => res.arrayBuffer());
-  const sign2Bytes = await fetch('/sign2.jpeg').then(res => res.arrayBuffer());
-  
-  const logoImage = await pdfDoc.embedPng(logoBytes);
-  const sign1Image = await pdfDoc.embedJpg(sign1Bytes);
-  const sign2Image = await pdfDoc.embedJpg(sign2Bytes);
+  // Load images helper
+  const loadImage = async (url) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const buffer = await res.arrayBuffer();
+      // Check magic numbers: PNG starts with 89 50 4E 47, JPG with FF D8
+      const uint8 = new Uint8Array(buffer);
+      if (uint8[0] === 0x89 && uint8[1] === 0x50) {
+        return await pdfDoc.embedPng(buffer);
+      } else if (uint8[0] === 0xFF && uint8[1] === 0xD8) {
+        return await pdfDoc.embedJpg(buffer);
+      }
+      return null;
+    } catch (e) {
+      console.warn(`Failed to load image at ${url}:`, e);
+      return null;
+    }
+  };
+
+  const logoImage = await loadImage('/zandralogo.png');
+  const sign1Image = await loadImage('/sign1.png') || await loadImage('/sign 1.jpeg') || await loadImage('/sign1.jpeg');
+  const sign2Image = await loadImage('/sign2.png') || await loadImage('/sign 2.jpeg') || await loadImage('/sign2.jpeg');
   
   // Header - Logo
   const logoWidth = 120;
@@ -31,12 +47,14 @@ export const generateInvoicePDF = async (invoiceData, showBankInfo = true) => {
   };
   const logoMargin = 20;
   
-  page.drawImage(logoImage, {
-    x: 30,
-    y: height - logoDims.height - logoMargin,
-    width: logoDims.width,
-    height: logoDims.height,
-  });
+  if (logoImage) {
+    page.drawImage(logoImage, {
+      x: 30,
+      y: height - logoDims.height - logoMargin,
+      width: logoDims.width,
+      height: logoDims.height,
+    });
+  }
   
   // Header - INVOICE Label
   page.drawText('INVOICE', {
@@ -315,23 +333,27 @@ export const generateInvoicePDF = async (invoiceData, showBankInfo = true) => {
   // Signatures
   y = 130;
   // Sign 1
-  page.drawImage(sign1Image, {
-    x: 50,
-    y: y + 20,
-    width: 80,
-    height: 40,
-  });
+  if (sign1Image) {
+    page.drawImage(sign1Image, {
+      x: 50,
+      y: y + 20,
+      width: 80,
+      height: 40,
+    });
+  }
   page.drawText('..........................................', { x: 50, y: y + 10, size: 10 });
   page.drawText('S.A.S.P Bandara', { x: 50, y: y - 5, size: 9, font: fontBold });
   page.drawText('Founder & CEO', { x: 50, y: y - 15, size: 8, font: fontRegular });
   
   // Sign 2
-  page.drawImage(sign2Image, {
-    x: width - 150,
-    y: y + 20,
-    width: 80,
-    height: 40,
-  });
+  if (sign2Image) {
+    page.drawImage(sign2Image, {
+      x: width - 150,
+      y: y + 20,
+      width: 80,
+      height: 40,
+    });
+  }
   page.drawText('..........................................', { x: width - 150, y: y + 10, size: 10 });
   page.drawText('N.M.Y. Nawanjana', { x: width - 150, y: y - 5, size: 9, font: fontBold });
   page.drawText('Director', { x: width - 150, y: y - 15, size: 8, font: fontRegular });

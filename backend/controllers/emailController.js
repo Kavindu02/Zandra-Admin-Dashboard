@@ -1,10 +1,8 @@
 const nodemailer = require('nodemailer');
 
-const sendItineraryEmail = async (req, res) => {
-  const { customer, delayInfo } = req.body;
-  
+const sendEmailInternal = async (customer, delayInfo = null) => {
   if (!customer || !customer.email) {
-    return res.status(400).json({ error: 'Customer email is required' });
+    throw new Error('Customer email is required');
   }
 
   // Extract segments
@@ -290,24 +288,31 @@ const sendItineraryEmail = async (req, res) => {
     }
   });
 
-  try {
-    const subject = delayInfo 
-      ? `🚨 Flight Delay Notification: ${originCode} - ${destCode}`
-      : `✈️ Flight Itinerary: ${originName} to ${destName}`;
+  const subject = delayInfo 
+    ? `🚨 Flight Delay Notification: ${originCode} - ${destCode}`
+    : `✈️ Flight Itinerary: ${originName} to ${destName}`;
 
-    await transporter.sendMail({
-      from: `"Zandra Travels" <${process.env.EMAIL_USER || 'no-reply@zandra.com'}>`,
-      to: customer.email,
-      subject: subject,
-      html: html
-    });
+  return await transporter.sendMail({
+    from: `"Zandra Travels" <${process.env.EMAIL_USER || 'no-reply@zandra.com'}>`,
+    to: customer.email,
+    subject: subject,
+    html: html
+  });
+};
+
+const sendItineraryEmail = async (req, res) => {
+  const { customer, delayInfo } = req.body;
+  
+  try {
+    await sendEmailInternal(customer, delayInfo);
     res.json({ message: 'Email sent successfully' });
   } catch (error) {
     console.error('Email error:', error);
-    res.status(500).json({ error: 'Failed to send email. Check SMTP settings in .env file.' });
+    res.status(500).json({ error: error.message || 'Failed to send email. Check SMTP settings in .env file.' });
   }
 };
 
 module.exports = {
-  sendItineraryEmail
+  sendItineraryEmail,
+  sendEmailInternal
 };
