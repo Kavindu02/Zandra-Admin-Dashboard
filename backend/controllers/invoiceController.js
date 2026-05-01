@@ -82,6 +82,7 @@ exports.generateInvoice = async (req, res) => {
             qty: totalQty,
             status: 'Pending',
             handledBy: firstCustomer.handledBy,
+            employeeId: firstCustomer.employeeId,
             isManual: 1
         });
     } catch (profitErr) {

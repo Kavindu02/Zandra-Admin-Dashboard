@@ -15,7 +15,7 @@ import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import { generateInvoicePDF } from '../utils/generateInvoicePDF';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const InvoiceManager = () => {
   const [invoices, setInvoices] = useState([]);

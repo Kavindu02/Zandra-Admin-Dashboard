@@ -4,10 +4,12 @@ import { toast } from 'react-hot-toast';
 import { Download, Pencil, RefreshCw, Search, Trash2, Plus, X, Calculator, DollarSign, Briefcase, Users } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function ProfitTracker() {
+  const { user } = useAuth();
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({ totalGrossProfit: 0, companyShare: 0, employeeShare: 0 });
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +18,7 @@ export default function ProfitTracker() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [employees, setEmployees] = useState([]);
 
   const [formData, setFormData] = useState({
     invoiceNo: '',
@@ -26,11 +29,12 @@ export default function ProfitTracker() {
     exchangeRate: 1,
     sellAmount: 0,
     costAmount: 0,
-    companySharePercent: 60,
-    employeeSharePercent: 40,
+    employeeShareAmount: 0,
     status: 'Paid',
     handledBy: 'ZANDRA TRAVELERS',
-    qty: 1
+    employeeId: '',
+    qty: 1,
+    companySharePercent: 0
   });
 
   const fetchProfitData = async () => {
@@ -49,7 +53,19 @@ export default function ProfitTracker() {
 
   useEffect(() => {
     fetchProfitData();
+    fetchEmployees();
   }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/auth/employees`, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      setEmployees(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch employees:', error);
+    }
+  };
 
   const filteredRows = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -64,10 +80,17 @@ export default function ProfitTracker() {
   const calculations = useMemo(() => {
     const sell = Number(formData.sellAmount) || 0;
     const cost = Number(formData.costAmount) || 0;
-    const gross = Math.max(0, sell - cost);
-    const coShare = (gross * (Number(formData.companySharePercent) || 0)) / 100;
-    const empShare = (gross * (Number(formData.employeeSharePercent) || 0)) / 100;
-    return { gross, coShare, empShare };
+    const coPercent = Number(formData.companySharePercent) || 0;
+    
+    const initialProfit = Math.max(0, sell - cost);
+    const coCut = (initialProfit * coPercent) / 100;
+    const empShare = Number(formData.employeeShareAmount) || 0;
+    
+    // Gross is the final remainder after all deductions
+    const gross = Math.max(0, initialProfit - coCut - empShare);
+    const coTotalShare = Math.max(0, initialProfit - empShare);
+    
+    return { gross, coShare: coTotalShare, empShare };
   }, [formData]);
 
   const handleOpenAddModal = () => {
@@ -81,11 +104,12 @@ export default function ProfitTracker() {
       exchangeRate: 1,
       sellAmount: 0,
       costAmount: 0,
-      companySharePercent: 60,
-      employeeSharePercent: 40,
+      employeeShareAmount: 0,
       status: 'Paid',
       handledBy: 'ZANDRA TRAVELERS',
-      qty: 1
+      employeeId: '',
+      qty: 1,
+      companySharePercent: 0
     });
     setIsModalOpen(true);
   };
@@ -96,8 +120,9 @@ export default function ProfitTracker() {
       ...record,
       sellAmount: record.sell || 0,
       costAmount: record.cost || 0,
-      companySharePercent: record.companySharePercent || 60,
-      employeeSharePercent: record.employeeSharePercent || 40,
+      employeeShareAmount: record.employeeShareAmount || 0,
+      companySharePercent: record.companySharePercent || 0,
+      employeeId: record.employeeId || '',
     });
     setIsModalOpen(true);
   };
@@ -231,12 +256,13 @@ export default function ProfitTracker() {
             </div>
           </div>
 
-          {/* Stats Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
-            <StatCard label="Total Gross Profit" value={summary.totalGrossProfit} icon={DollarSign} colorClass="text-emerald-600" />
-            <StatCard label="Company Share" value={summary.companyShare} icon={Briefcase} colorClass="text-blue-600" />
-            <StatCard label="Employee Share" value={summary.employeeShare} icon={Users} colorClass="text-violet-600" />
-          </div>
+          {user?.role === 'admin' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+              <StatCard label="Total Gross Profit" value={summary.totalGrossProfit} icon={DollarSign} colorClass="text-emerald-600" />
+              <StatCard label="Company Share" value={summary.companyShare} icon={Briefcase} colorClass="text-blue-600" />
+              <StatCard label="Employee Share" value={summary.employeeShare} icon={Users} colorClass="text-violet-600" />
+            </div>
+          )}
 
           <div className="bg-white rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden min-h-[500px]">
             {/* Search Top */}
@@ -406,7 +432,7 @@ export default function ProfitTracker() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Co. Share %</label>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Company Share (%)</label>
                         <input 
                           type="number" 
                           value={formData.companySharePercent} 
@@ -415,11 +441,11 @@ export default function ProfitTracker() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Emp. Share %</label>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider ml-1">Emp. Share (LKR)</label>
                         <input 
                           type="number" 
-                          value={formData.employeeSharePercent} 
-                          onChange={(e) => setFormData({...formData, employeeSharePercent: Number(e.target.value)})}
+                          value={formData.employeeShareAmount} 
+                          onChange={(e) => setFormData({...formData, employeeShareAmount: Number(e.target.value)})}
                           className="w-full h-11 bg-white border border-gray-200 rounded-xl px-4 text-sm font-bold text-violet-600 outline-none focus:ring-2 focus:ring-violet-500/10"
                         />
                       </div>
@@ -440,13 +466,20 @@ export default function ProfitTracker() {
 
                 <div className="grid grid-cols-2 gap-5">
                    <div className="space-y-1">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Handled By</label>
-                      <input 
-                        type="text" 
-                        value={formData.handledBy} 
-                        onChange={(e) => setFormData({...formData, handledBy: e.target.value})}
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Assign to Employee</label>
+                      <select 
+                        value={formData.employeeId} 
+                        onChange={(e) => {
+                          const emp = employees.find(ev => ev.id === Number(e.target.value));
+                          setFormData({...formData, employeeId: e.target.value, handledBy: emp ? emp.username : formData.handledBy});
+                        }}
                         className="w-full h-11 bg-gray-50 border border-transparent rounded-xl px-4 text-sm font-bold text-gray-700 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-                      />
+                      >
+                         <option value="">Select Employee</option>
+                         {employees.map(emp => (
+                           <option key={emp.id} value={emp.id}>{emp.username}</option>
+                         ))}
+                      </select>
                    </div>
                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Quantity (QTY)</label>

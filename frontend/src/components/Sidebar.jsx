@@ -3,7 +3,7 @@ import {
   TrendingUp, Ticket, FileText, Calendar, 
   Users, CalendarClock, LogOut, Map,
   ArrowUpCircle, ArrowDownCircle, CreditCard, Banknote,
-  BookOpen, BarChart3, DollarSign, UserCog, UserPlus
+  BookOpen, BarChart3, DollarSign, UserCog, UserPlus, User
 } from 'lucide-react';
 
 const menuGroups = [
@@ -11,6 +11,7 @@ const menuGroups = [
     title: 'OVERVIEW',
     items: [
       { label: 'Dashboard', icon: LayoutDashboard, active: true },
+      { label: 'Profile', icon: User },
       { label: 'Notifications', icon: Bell },
       { label: 'Reminders', icon: AlarmClock },
     ]
@@ -21,7 +22,7 @@ const menuGroups = [
       { label: 'Customers & Flights', icon: Plane },
       { label: 'Tour Packages', icon: Map },
       { label: 'Passengers', icon: Users },
-      { label: 'Employees', icon: UserCog },
+      { label: 'Employees', icon: UserCog, adminOnly: true },
       { label: 'Issue Ticket', icon: Ticket },
       { label: 'Invoice Generator', icon: FileText },
       { label: 'Flight Calendar', icon: Calendar },
@@ -30,10 +31,10 @@ const menuGroups = [
   {
     title: 'FINANCE',
     items: [
-      { label: 'Profit Tracker', icon: TrendingUp, adminOnly: true },
-      { label: 'Expenses', icon: ArrowUpCircle },
-      { label: 'Receivables', icon: ArrowDownCircle },
-      { label: 'Payables', icon: CreditCard },
+      { label: 'Profit Tracker', icon: TrendingUp },
+      { label: 'Expenses', icon: ArrowUpCircle, adminOnly: true },
+      { label: 'Receivables', icon: ArrowDownCircle, adminOnly: true },
+      { label: 'Payables', icon: CreditCard, adminOnly: true },
       { label: 'Payroll', icon: Banknote, adminOnly: true },
     ]
   },
@@ -84,6 +85,7 @@ export default function Sidebar() {
   // Reverse map: route -> label
   const routeToLabel = Object.entries({
     'Dashboard': '/',
+    'Profile': '/profile',
     'Notifications': '/notifications',
     'Reminders': '/reminders',
     'Tour Packages': '/tour-packages',
@@ -115,6 +117,7 @@ export default function Sidebar() {
   // Map label to route
   const routeMap = {
     'Dashboard': '/',
+    'Profile': '/profile',
     'Notifications': '/notifications',
     'Reminders': '/reminders',
     'Tour Packages': '/tour-packages',

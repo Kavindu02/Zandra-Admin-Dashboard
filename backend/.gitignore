@@ -19,3 +19,9 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+
+# Uploads
+public/CV/*
+public/Agreements/*
+!public/CV/.gitkeep
+!public/Agreements/.gitkeep

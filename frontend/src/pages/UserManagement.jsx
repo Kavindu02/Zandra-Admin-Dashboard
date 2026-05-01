@@ -18,7 +18,8 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/auth/users', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const { data } = await axios.get(`${apiUrl}/api/auth/users`, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       setUsers(data);
@@ -39,7 +40,8 @@ const UserManagement = () => {
     setError('');
     setSuccess('');
     try {
-      await axios.post('http://localhost:5000/api/auth/register', formData, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      await axios.post(`${apiUrl}/api/auth/register`, formData, {
         headers: { Authorization: `Bearer ${user.token}` }
       });
       setSuccess(`Successfully created ${formData.role} account for ${formData.username}`);
@@ -55,7 +57,8 @@ const UserManagement = () => {
   const handleDelete = async (id, username) => {
     if (window.confirm(`Are you sure you want to completely delete the user ${username}?`)) {
       try {
-        await axios.delete(`http://localhost:5000/api/auth/users/${id}`, {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        await axios.delete(`${apiUrl}/api/auth/users/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` }
         });
         toast.success('User deleted successfully');

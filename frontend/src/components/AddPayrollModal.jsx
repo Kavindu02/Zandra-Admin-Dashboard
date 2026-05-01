@@ -2,8 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { X, Calendar, ChevronDown } from 'lucide-react';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function AddPayrollModal({ isOpen, onClose, record = null }) {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -18,6 +20,7 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
     bonuses: 0,
     manualDeductions: 0,
     taxDeduction: 0,
+    employeeShare: 0,
     paymentStatus: 'Unpaid',
     notes: ''
   });
@@ -32,8 +35,14 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
     const fetchEmployees = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await axios.get(`${apiUrl}/api/employees`);
-        setEmployees(res.data);
+        const res = await axios.get(`${apiUrl}/api/auth/employees`, {
+          headers: { Authorization: `Bearer ${user?.token}` }
+        });
+        const empList = (res.data || []).map(u => ({
+          id: u.id,
+          name: u.username
+        }));
+        setEmployees(empList);
       } catch (error) {
         console.error('Failed to fetch employees:', error);
       }
@@ -54,6 +63,29 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
       fetchSettings();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const fetchEmployeeShare = async () => {
+      if (formData.employeeId && formData.payrollMonth) {
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+          const res = await axios.get(`${apiUrl}/api/profittracker/employee-share-total`, {
+            params: {
+              employeeId: formData.employeeId,
+              month: formData.payrollMonth
+            }
+          });
+          setFormData(prev => ({ ...prev, employeeShare: res.data.total || 0 }));
+        } catch (error) {
+          console.error('Failed to fetch employee share:', error);
+        }
+      }
+    };
+
+    if (isOpen && !record) {
+      fetchEmployeeShare();
+    }
+  }, [formData.employeeId, formData.payrollMonth, isOpen, record]);
 
   // Handle record population for editing
   useEffect(() => {
@@ -77,6 +109,7 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
         bonuses: 0,
         manualDeductions: 0,
         taxDeduction: 0,
+        employeeShare: 0,
         paymentStatus: 'Unpaid',
         notes: ''
       });
@@ -90,8 +123,9 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
     const bonuses = Number(formData.bonuses) || 0;
     const manualDeductions = Number(formData.manualDeductions) || 0;
     const taxDeduction = Number(formData.taxDeduction) || 0;
+    const employeeShare = Number(formData.employeeShare) || 0;
 
-    const gross = basic + allowances + overtime + bonuses;
+    const gross = basic + allowances + overtime + bonuses + employeeShare;
     const epfEmp = basic * (payrollSettings.epfEmployee / 100);
     const epfEmpr = basic * (payrollSettings.epfEmployer / 100);
     const etf = basic * (payrollSettings.etfEmployer / 100);
@@ -180,6 +214,11 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
                   <option key={emp.id} value={emp.id}>{emp.name}</option>
                 ))}
               </select>
+              {formData.employeeShare > 0 && (
+                <p className="text-[10px] text-emerald-600 font-bold mt-1">
+                   ★ Monthly Profit Share: LKR {formData.employeeShare.toLocaleString()} (Auto-added to Gross)
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Payroll Month *</label>
@@ -333,6 +372,10 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
               <div className="bg-white p-3 rounded-xl border border-gray-100 text-center shadow-sm">
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">ETF (Empr {payrollSettings.etfEmployer}%)</p>
                 <p className="text-xs font-bold text-orange-600 mt-1">LKR {calculations.etf.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              </div>
+              <div className="bg-white p-3 rounded-xl border border-gray-100 text-center shadow-sm">
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Profit Share</p>
+                <p className="text-xs font-bold text-violet-600 mt-1">LKR {Number(formData.employeeShare || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="bg-white p-3 rounded-xl border border-gray-100 text-center shadow-sm">
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Total Deductions</p>

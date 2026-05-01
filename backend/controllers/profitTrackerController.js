@@ -49,3 +49,16 @@ exports.recalculateAll = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getEmployeeSharesTotal = async (req, res) => {
+  try {
+    const { employeeId, month } = req.query;
+    if (!employeeId || !month) {
+      return res.status(400).json({ error: 'employeeId and month are required' });
+    }
+    const total = await ProfitTracker.getEmployeeSharesTotal(employeeId, month);
+    res.json({ total });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

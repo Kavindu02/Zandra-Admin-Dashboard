@@ -9,36 +9,43 @@ const toNullableNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-const calculateDerivedParts = ({ sell, cost, companySharePercent, employeeSharePercent }) => {
+const calculateDerivedParts = ({ sell, cost, employeeShareAmount, companySharePercent }) => {
   const sellValue = toNullableNumber(sell);
   const costValue = toNullableNumber(cost);
-  const companyPercent = toNullableNumber(companySharePercent);
-  const employeePercent = toNullableNumber(employeeSharePercent);
+  const empShareAmount = toNullableNumber(employeeShareAmount);
+  const coPercent = toNullableNumber(companySharePercent) || 0;
 
   if (sellValue === null || costValue === null) {
     return {
       sell: sellValue,
       cost: costValue,
       gross: null,
-      companySharePercent: companyPercent,
-      employeeSharePercent: employeePercent,
+      employeeShareAmount: empShareAmount,
       companyShare: null,
-      employeeShare: null
+      employeeShare: empShareAmount,
+      companySharePercent: coPercent
     };
   }
 
-  const gross = Math.max(0, sellValue - costValue);
-  const companyShare = companyPercent === null ? null : Math.round((gross * companyPercent) / 100);
-  const employeeShare = employeePercent === null ? null : Math.round((gross * employeePercent) / 100);
+  const initialProfit = Math.max(0, sellValue - costValue);
+  const companyCut = (initialProfit * coPercent) / 100;
+  const employeeCut = empShareAmount || 0;
+  
+  // Gross is the final remainder after all deductions
+  const gross = Math.max(0, initialProfit - companyCut - employeeCut);
+  
+  const employeeShare = employeeCut;
+  // Total company share includes the percentage cut and the final remainder
+  const companyShare = Math.max(0, initialProfit - employeeShare);
 
   return {
     sell: sellValue,
     cost: costValue,
     gross,
-    companySharePercent: companyPercent,
-    employeeSharePercent: employeePercent,
+    employeeShareAmount: empShareAmount,
     companyShare,
-    employeeShare
+    employeeShare,
+    companySharePercent: coPercent
   };
 };
 
@@ -70,10 +77,12 @@ const ensureProfitTrackerTable = async () => {
       gross DECIMAL(15,2) NULL,
       companySharePercent DECIMAL(6,2) NULL,
       employeeSharePercent DECIMAL(6,2) NULL,
+      employeeShareAmount DECIMAL(15,2) DEFAULT 0,
       companyShare DECIMAL(15,2) NULL,
       employeeShare DECIMAL(15,2) NULL,
       status VARCHAR(80) NULL,
       handledBy VARCHAR(255) DEFAULT '',
+      employeeId INT NULL,
       qty INT DEFAULT 1,
       isManual TINYINT(1) DEFAULT 0,
       isDeleted TINYINT(1) DEFAULT 0,
@@ -88,10 +97,12 @@ const ensureProfitTrackerTable = async () => {
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN exchangeRate DECIMAL(12,4) NULL');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN companySharePercent DECIMAL(6,2) NULL');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN employeeSharePercent DECIMAL(6,2) NULL');
+  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN employeeShareAmount DECIMAL(15,2) DEFAULT 0');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN isManual TINYINT(1) DEFAULT 0');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN isDeleted TINYINT(1) DEFAULT 0');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN currencies VARCHAR(120) NULL');
   await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN qty INT DEFAULT 1');
+  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN employeeId INT NULL');
 };
 
 const buildSummary = (records) => {
@@ -136,7 +147,8 @@ exports.updateProfitRecord = async (id, data) => {
 
   const nextPaymentMethod = data.paymentMethod ?? existing.paymentMethod;
   const nextStatus = existing.status;
-  const nextHandledBy = existing.handledBy;
+  const nextHandledBy = data.handledBy ?? existing.handledBy;
+  const nextEmployeeId = data.employeeId ?? existing.employeeId;
   const nextQty = data.qty ?? existing.qty ?? 1;
   const nextSellCurrency = data.sellCurrency ?? existing.sellCurrency;
   const nextCostCurrency = data.costCurrency ?? existing.costCurrency;
@@ -149,8 +161,8 @@ exports.updateProfitRecord = async (id, data) => {
   const parts = calculateDerivedParts({
     sell: data.sellAmount ?? data.sell ?? existing.sell,
     cost: data.costAmount ?? data.cost ?? existing.cost,
-    companySharePercent: data.companySharePercent ?? existing.companySharePercent,
-    employeeSharePercent: data.employeeSharePercent ?? existing.employeeSharePercent
+    employeeShareAmount: data.employeeShareAmount ?? existing.employeeShareAmount,
+    companySharePercent: data.companySharePercent ?? existing.companySharePercent
   });
 
   await db.query(
@@ -163,13 +175,14 @@ exports.updateProfitRecord = async (id, data) => {
          sell = ?,
          cost = ?,
          gross = ?,
-         companySharePercent = ?,
-         employeeSharePercent = ?,
+         employeeShareAmount = ?,
          companyShare = ?,
          employeeShare = ?,
          status = ?,
          handledBy = ?,
+         employeeId = ?,
          qty = ?,
+         companySharePercent = ?,
          isManual = 1,
          isDeleted = 0
      WHERE id = ?`,
@@ -182,13 +195,14 @@ exports.updateProfitRecord = async (id, data) => {
       parts.sell,
       parts.cost,
       parts.gross,
-      parts.companySharePercent,
-      parts.employeeSharePercent,
+      parts.employeeShareAmount,
       parts.companyShare,
       parts.employeeShare,
       nextStatus,
       nextHandledBy,
+      nextEmployeeId,
       nextQty,
+      parts.companySharePercent,
       id
     ]
   );
@@ -203,11 +217,13 @@ exports.deleteProfitRecord = async (id) => {
 };
 
 exports.getProfitByCustomerFlightId = async (customerFlightId) => {
+  await ensureProfitTrackerTable();
   const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE customerFlightId = ?', [customerFlightId]);
   return rows[0];
 };
 
 exports.getProfitByInvoiceNo = async (invoiceNo) => {
+  await ensureProfitTrackerTable();
   const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE invoiceNo = ? AND isDeleted = 0 ORDER BY id DESC LIMIT 1', [invoiceNo]);
   return rows[0];
 };
@@ -232,17 +248,17 @@ exports.createProfitRecord = async (data) => {
   const parts = calculateDerivedParts({
     sell: data.sellAmount || data.sell || 0,
     cost: data.costAmount || data.cost || 0,
-    companySharePercent: data.companySharePercent || 60,
-    employeeSharePercent: data.employeeSharePercent || 40
+    employeeShareAmount: data.employeeShareAmount || 0,
+    companySharePercent: data.companySharePercent || 0
   });
 
   const [result] = await db.query(
     `INSERT INTO ProfitTracker (
       invoiceNo, passenger, paymentMethod, sellCurrency, costCurrency, 
       exchangeRate, currencies, sell, cost, gross, 
-      companySharePercent, employeeSharePercent, companyShare, employeeShare, 
-      status, handledBy, qty, isManual
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      employeeShareAmount, companyShare, employeeShare, 
+      status, handledBy, employeeId, qty, isManual, companySharePercent
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.invoiceNo || 'MANUAL-' + Date.now(),
       data.passenger || 'Manual Entry',
@@ -254,14 +270,15 @@ exports.createProfitRecord = async (data) => {
       parts.sell,
       parts.cost,
       parts.gross,
-      parts.companySharePercent,
-      parts.employeeSharePercent,
+      parts.employeeShareAmount,
       parts.companyShare,
       parts.employeeShare,
       data.status || 'Paid',
       data.handledBy || 'ZANDRA TRAVELERS',
+      data.employeeId || null,
       data.qty || 1,
-      1
+      data.isManual || 0,
+      parts.companySharePercent
     ]
   );
 
@@ -279,15 +296,27 @@ exports.recalculateAllRecords = async () => {
     const parts = calculateDerivedParts({
       sell: row.sell,
       cost: row.cost,
-      companySharePercent: row.companySharePercent,
-      employeeSharePercent: row.employeeSharePercent
+      employeeShareAmount: row.employeeShareAmount,
+      companySharePercent: row.companySharePercent
     });
 
     await db.query(
       `UPDATE ProfitTracker
-       SET gross = ?, companyShare = ?, employeeShare = ?
+       SET gross = ?, companyShare = ?, employeeShare = ?, companySharePercent = ?
        WHERE id = ?`,
-      [parts.gross, parts.companyShare, parts.employeeShare, row.id]
+      [parts.gross, parts.companyShare, parts.employeeShare, parts.companySharePercent, row.id]
     );
   }
+};
+
+exports.getEmployeeSharesTotal = async (employeeId, month) => {
+  const [rows] = await db.query(
+    `SELECT SUM(employeeShare) as total 
+     FROM ProfitTracker 
+     WHERE employeeId = ? 
+     AND isDeleted = 0 
+     AND DATE_FORMAT(created_at, '%Y-%m') = ?`,
+    [employeeId, month]
+  );
+  return rows[0].total || 0;
 };

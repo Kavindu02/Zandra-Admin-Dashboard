@@ -114,24 +114,34 @@ exports.getDashboardSummary = async () => {
   });
 
   // 3. Top Destinations
-  const [destRows] = await db.query(`
-    SELECT \`to\` as destination, COUNT(*) as count 
-    FROM CustomersFlights 
-    WHERE \`to\` IS NOT NULL AND \`to\` != '' AND YEAR(created_at) = ?
-    GROUP BY \`to\` 
-    ORDER BY count DESC 
-    LIMIT 5
-  `, [currentYear]).catch(() => {
-    // fallback if created_at is missing on CustomersFlights
-    return db.query(`
+  let destRows = [];
+  try {
+    [destRows] = await db.query(`
       SELECT \`to\` as destination, COUNT(*) as count 
       FROM CustomersFlights 
-      WHERE \`to\` IS NOT NULL AND \`to\` != '' 
+      WHERE \`to\` IS NOT NULL AND \`to\` != '' AND YEAR(created_at) = ?
       GROUP BY \`to\` 
       ORDER BY count DESC 
       LIMIT 5
-    `);
-  });
+    `, [currentYear]);
+  } catch (err) {
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      destRows = [];
+    } else {
+      try {
+        [destRows] = await db.query(`
+          SELECT \`to\` as destination, COUNT(*) as count 
+          FROM CustomersFlights 
+          WHERE \`to\` IS NOT NULL AND \`to\` != '' 
+          GROUP BY \`to\` 
+          ORDER BY count DESC 
+          LIMIT 5
+        `);
+      } catch (fallbackErr) {
+        destRows = [];
+      }
+    }
+  }
 
   const topDestinations = (destRows || []).map(r => ({
     name: r.destination,

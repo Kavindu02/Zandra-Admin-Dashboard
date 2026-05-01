@@ -9,9 +9,11 @@ import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import { parseTicketFile } from '../utils/parseTicket';
 import DelayModal from '../components/DelayModal';
+import { useAuth } from '../contexts/AuthContext';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function CustomersFlights() {
+  const { user } = useAuth();
 
   const initialFormData = {
     passenger_id: '',
@@ -46,6 +48,7 @@ export default function CustomersFlights() {
     class: 'Economy',
     adults: 1,
     handledBy: '',
+    employeeId: null,
     notes: '',
     segments: [
       { from: '', to: '', departureDate: '', departureTime: '', arrivalDate: '', arrivalTime: '', duration: '', airline: '', flightNo: '', airlineRef: '', baggage: '', status: 'Pending', fareBasis: '', equipment: '', departureTerminal: '', arrivalTerminal: '' }
@@ -166,6 +169,7 @@ export default function CustomersFlights() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const fileInputRef = useRef(null);
+  const [employees, setEmployees] = useState([]);
   const [sendingEmail, setSendingEmail] = useState(null); // id of customer being emailed
   const [isDelayModalOpen, setIsDelayModalOpen] = useState(false);
   const [delayCustomer, setDelayCustomer] = useState(null);
@@ -175,7 +179,19 @@ export default function CustomersFlights() {
   useEffect(() => {
     fetchCustomers();
     fetchPassengers();
+    fetchEmployees();
   }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/auth/employees`, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      setEmployees(res.data || []);
+    } catch (error) {
+      console.error('Failed to fetch employees:', error);
+    }
+  };
 
   const fetchPassengers = async () => {
     try {
@@ -1952,8 +1968,16 @@ export default function CustomersFlights() {
                     {activeTab === 'Extra' && (
                       <div className="space-y-6 px-1 pb-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">Tour Executive (Handled By)</label>
-                          <input placeholder="Select employee" className="w-full h-11 bg-[#F9FAFB] border border-gray-200 px-4 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-200 transition-all font-medium" value={formData.handledBy} onChange={e => setFormData({...formData, handledBy: e.target.value})} />
+                          <CustomSelect 
+                            label="Tour Executive (Handled By)"
+                            value={formData.handledBy}
+                            options={employees.map(emp => ({ value: emp.username, label: emp.username }))}
+                            onChange={val => {
+                              const emp = employees.find(e => e.username === val);
+                              setFormData({...formData, handledBy: val, employeeId: emp ? emp.id : null});
+                            }}
+                            icon={Users}
+                          />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>

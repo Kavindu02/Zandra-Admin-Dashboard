@@ -20,7 +20,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const { data } = await axios.post('http://localhost:5000/api/auth/login', { username, password });
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const { data } = await axios.post(`${apiUrl}/api/auth/login`, { username, password });
       setUser(data);
       localStorage.setItem('zandra_user', JSON.stringify(data));
       return data;

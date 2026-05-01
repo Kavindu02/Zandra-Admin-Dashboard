@@ -26,6 +26,7 @@ import ProfitAndLoss from './pages/ProfitAndLoss.jsx';
 import BalanceSheet from './pages/BalanceSheet.jsx';
 import TourPackages from './pages/TourPackages.jsx';
 import UserManagement from './pages/UserManagement.jsx';
+import Profile from './pages/Profile.jsx';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
 
@@ -40,28 +41,29 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/reminders" element={<Reminders />} />
             <Route path="/customers-flights" element={<CustomersFlights />} />
             <Route path="/passengers" element={<Passengers />} />
-            <Route path="/employees" element={<Employees />} />
             <Route path="/issue-ticket" element={<IssueTicket />} />
             <Route path="/invoice-generator" element={<InvoiceGenerator />} />
             <Route path="/flight-calendar" element={<FlightCalendar />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/receivables" element={<Receivables />} />
-            <Route path="/payables" element={<Payables />} />
             <Route path="/tour-packages" element={<TourPackages />} />
             <Route path="/chart-of-accounts" element={<ChartOfAccounts />} />
             <Route path="/general-ledger" element={<GeneralLedger />} />
             <Route path="/balance-sheet" element={<BalanceSheet />} />
+            <Route path="/profit-tracker" element={<ProfitTracker />} />
           </Route>
 
           <Route element={<AdminRoute />}>
-            <Route path="/profit-tracker" element={<ProfitTracker />} />
             <Route path="/payroll" element={<Payroll />} />
             <Route path="/cash-flow" element={<CashFlow />} />
             <Route path="/profit-and-loss" element={<ProfitAndLoss />} />
             <Route path="/user-management" element={<UserManagement />} />
+            <Route path="/employees" element={<Employees />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/receivables" element={<Receivables />} />
+            <Route path="/payables" element={<Payables />} />
           </Route>
         </Routes>
       </AuthProvider>

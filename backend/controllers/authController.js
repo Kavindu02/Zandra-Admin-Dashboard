@@ -66,10 +66,75 @@ const registerStaff = async (req, res) => {
 
 const getUsers = async (req, res) => {
   try {
-    const [users] = await pool.query('SELECT id, username, role, created_at FROM auth_users');
+    const [users] = await pool.query('SELECT id, username, role, phone, email, cv_path, agreement1_path, agreement2_path, created_at FROM auth_users');
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching users', error: error.message });
+  }
+};
+
+const getProfile = async (req, res) => {
+  try {
+    const [users] = await pool.query(
+      'SELECT id, username, role, phone, email, cv_path, agreement1_path, agreement2_path FROM auth_users WHERE id = ?',
+      [req.user.id]
+    );
+    if (users.length === 0) return res.status(404).json({ message: 'User not found' });
+    res.json(users[0]);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching profile', error: error.message });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  const { phone, email } = req.body;
+  const userId = req.params.id || req.user.id; // Admin can specify id, employee uses their own
+  
+  try {
+    await pool.query(
+      'UPDATE auth_users SET phone = ?, email = ? WHERE id = ?',
+      [phone, email, userId]
+    );
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error updating profile', error: error.message });
+  }
+};
+
+const uploadFiles = async (req, res) => {
+  const userId = req.user.id;
+  const files = req.files;
+  
+  try {
+    let updateFields = [];
+    let values = [];
+    
+    if (files.cv) {
+      updateFields.push('cv_path = ?');
+      values.push(files.cv[0].path);
+    }
+    if (files.agreement1) {
+      updateFields.push('agreement1_path = ?');
+      values.push(files.agreement1[0].path);
+    }
+    if (files.agreement2) {
+      updateFields.push('agreement2_path = ?');
+      values.push(files.agreement2[0].path);
+    }
+    
+    if (updateFields.length === 0) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+    
+    values.push(userId);
+    await pool.query(
+      `UPDATE auth_users SET ${updateFields.join(', ')} WHERE id = ?`,
+      values
+    );
+    
+    res.json({ message: 'Files uploaded successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error uploading files', error: error.message });
   }
 };
 
@@ -83,4 +148,13 @@ const deleteUser = async (req, res) => {
   }
 }
 
-module.exports = { login, registerStaff, getUsers, deleteUser };
+const getEmployees = async (req, res) => {
+  try {
+    const [users] = await pool.query('SELECT id, username FROM auth_users WHERE role = ?', ['employee']);
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error fetching employees', error: error.message });
+  }
+};
+
+module.exports = { login, registerStaff, getUsers, getEmployees, deleteUser, getProfile, updateProfile, uploadFiles };
