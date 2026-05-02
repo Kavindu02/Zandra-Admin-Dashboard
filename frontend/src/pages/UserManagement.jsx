@@ -143,7 +143,7 @@ const UserManagement = () => {
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                   <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2"><Users size={18} className="text-orange-500"/> Existing Accounts</h2>
                   <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">
-                    {users.filter(u => u.username !== 'admin' && u.username !== 'Sandaru').length} Total Staff
+                    {users.filter(u => u.username !== 'Sandaru').length} Total Staff
                   </span>
                 </div>
                 
@@ -159,7 +159,7 @@ const UserManagement = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {users.filter(u => u.username !== 'admin' && u.username !== 'Sandaru').map(u => (
+                      {users.filter(u => u.username !== 'Sandaru').map(u => (
                         <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
@@ -189,7 +189,7 @@ const UserManagement = () => {
                           </td>
                         </tr>
                       ))}
-                      {users.filter(u => u.username !== 'admin' && u.username !== 'Sandaru').length === 0 && (
+                      {users.filter(u => u.username !== 'Sandaru').length === 0 && (
                         <tr>
                           <td colSpan="3" className="px-6 py-8 text-center text-gray-500">No staff found.</td>
                         </tr>

@@ -780,7 +780,7 @@ export default function CustomersFlights() {
                   setIsModalOpen(true);
                   setActiveTab('Passenger');
                 }} 
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#101D42] text-white rounded-xl text-sm font-semibold hover:bg-opacity-90 transition cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-opacity-90 transition cursor-pointer"
               >
                 <Plus size={18} /> Add Customer
               </button>
@@ -851,7 +851,7 @@ export default function CustomersFlights() {
                         <button
                           key={option}
                           className={`w-full px-4 py-2 text-left text-sm transition
-                        ${statusFilter === option ? 'bg-gray-100 text-[#101D42] font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
+                        ${statusFilter === option ? 'bg-gray-100 text-primary font-semibold' : 'text-gray-700 hover:bg-gray-50'}`}
                           onClick={() => { setStatusFilter(option); setDropdownOpen(false); }}
                         >
                           {option}
@@ -878,7 +878,7 @@ export default function CustomersFlights() {
                             }
                           }}
                           checked={selectedIds.length === customers.length && customers.length > 0}
-                          className="rounded border-gray-300 text-[#101D42] focus:ring-[#101D42]"
+                          className="rounded border-gray-300 text-primary focus:ring-primary"
                         />
                       </th>
                       <th className="px-6 py-4">Passenger</th>
@@ -906,7 +906,7 @@ export default function CustomersFlights() {
                                 setSelectedIds(selectedIds.filter(id => id !== customer.id));
                               }
                             }}
-                            className="rounded border-gray-300 text-[#101D42] focus:ring-[#101D42]"
+                            className="rounded border-gray-300 text-primary focus:ring-primary"
                           />
                         </td>
                         <td className="px-6 py-4">
@@ -1090,7 +1090,7 @@ export default function CustomersFlights() {
                                               
                                               {viewCustomer.segments && viewCustomer.segments.length > 0 && (viewCustomer.tripType === 'Multi City' || viewCustomer.routeType === 'Transit' || viewCustomer.routeType === 'Direct') && (
                                                 <div className="col-span-2 mt-4">
-                                                  <div className="text-[#101D42] font-bold text-sm mb-3 flex items-center gap-2">
+                                                  <div className="text-primary font-bold text-sm mb-3 flex items-center gap-2">
                                                     <Plane size={14} className="text-orange-500" />
                                                     OUTBOUND FLIGHT SEGMENTS
                                                   </div>
@@ -1121,7 +1121,7 @@ export default function CustomersFlights() {
                                               
                                               {viewCustomer.returnSegments && viewCustomer.returnSegments.length > 0 && (viewCustomer.tripType === 'Multi City' || viewCustomer.routeType === 'Transit' || viewCustomer.routeType === 'Direct') && (
                                                 <div className="col-span-2 mt-4">
-                                                  <div className="text-[#101D42] font-bold text-sm mb-3 flex items-center gap-2">
+                                                  <div className="text-primary font-bold text-sm mb-3 flex items-center gap-2">
                                                     <Plane size={14} className="text-orange-500" />
                                                     RETURN FLIGHT SEGMENTS
                                                   </div>
@@ -1153,7 +1153,7 @@ export default function CustomersFlights() {
                                           </div>
                                           <div className="mt-4 flex justify-end">
                                             <button
-                                              className="px-5 py-2 bg-[#101D42] text-white rounded-lg hover:bg-[#22306e]"
+                                              className="px-5 py-2 bg-primary text-white rounded-lg hover:bg-[#22306e]"
                                               onClick={() => setViewCustomer(null)}
                                             >Back</button>
                                           </div>
@@ -1246,7 +1246,7 @@ export default function CustomersFlights() {
                         <button
                           onClick={() => handleSendEmail(customer)}
                           disabled={sendingEmail === customer.id}
-                          className={`flex items-center gap-1 font-medium transition ${sendingEmail === customer.id ? 'text-gray-400' : 'text-[#253A73] hover:text-[#101D42] cursor-pointer'}`}
+                          className={`flex items-center gap-1 font-medium transition ${sendingEmail === customer.id ? 'text-gray-400' : 'text-[#253A73] hover:text-primary cursor-pointer'}`}
                         >
                           {sendingEmail === customer.id ? (
                             <div className="flex items-center gap-1">
@@ -1433,6 +1433,12 @@ export default function CustomersFlights() {
                                    if (parsedData.issuedDate) newData.issuedDate = parsedData.issuedDate;
                                    
                                    if (parsedData.segments && parsedData.segments.length > 0) {
+                                       const getCode = (str) => {
+                                          if (!str) return '---';
+                                          const match = str.match(/\(([^)]+)\)/);
+                                          return match ? match[1] : str.substring(0, 3).toUpperCase();
+                                       };
+
                                        const extractLogo = (fno) => {
                                           if (!fno) return '';
                                           const code = fno.trim().substring(0, 2).toUpperCase();
@@ -1479,22 +1485,47 @@ export default function CustomersFlights() {
                                           newData.routeType = 'Direct';
                                           newData.tripType = 'One Way';
                                           newData.segments = newSegs;
-                                      } else if (newSegs.length === 2) {
-                                          if (newSegs[0].from === newSegs[1].to && newSegs[0].to === newSegs[1].from) {
-                                             newData.routeType = 'Direct';
-                                             newData.tripType = 'Round Trip';
-                                             newData.segments = [newSegs[0]];
-                                             newData.returnSegments = [newSegs[1]];
-                                          } else {
-                                             newData.routeType = 'Transit';
-                                             newData.tripType = 'One Way';
-                                             newData.segments = newSegs;
-                                             newData.returnSegments = [];
+                                          newData.returnSegments = [];
+                                      } else if (newSegs.length > 1) {
+                                          // Intelligent splitting for Round Trips (even with transits)
+                                          const firstFrom = getCode(newSegs[0].from);
+                                          const lastTo = getCode(newSegs[newSegs.length - 1].to);
+                                          
+                                          let splitIndex = -1;
+                                          // Check if it's a round trip (ends where it started)
+                                          if (firstFrom === lastTo && firstFrom !== '---') {
+                                              // Look for the turnaround point (where 'to' matches next 'from')
+                                              // In a round trip, there's usually a point where the destination airport repeats
+                                              for (let i = 0; i < newSegs.length - 1; i++) {
+                                                  if (newSegs[i].to === newSegs[i+1].from) {
+                                                      // This is a candidate turnaround point if it's roughly in the middle
+                                                      // or if we have information that it's the destination.
+                                                      // For now, let's look for the one that seems most like a turnaround.
+                                                      // A common pattern is A-X-B and B-Y-A. Split at index 1 (to: B, next from: B)
+                                                      if (i >= (newSegs.length / 2) - 1) {
+                                                          splitIndex = i;
+                                                          break;
+                                                      }
+                                                  }
+                                              }
                                           }
-                                      } else {
-                                          newData.tripType = 'Multi City';
-                                          newData.routeType = 'Direct';
-                                          newData.segments = newSegs;
+
+                                          if (splitIndex !== -1) {
+                                              newData.tripType = 'Round Trip';
+                                              newData.routeType = newSegs.length > 2 ? 'Transit' : 'Direct';
+                                              newData.segments = newSegs.slice(0, splitIndex + 1);
+                                              newData.returnSegments = newSegs.slice(splitIndex + 1);
+                                          } else if (newSegs.length === 2) {
+                                              newData.routeType = 'Transit';
+                                              newData.tripType = 'One Way';
+                                              newData.segments = newSegs;
+                                              newData.returnSegments = [];
+                                          } else {
+                                              newData.tripType = 'Multi City';
+                                              newData.routeType = 'Direct';
+                                              newData.segments = newSegs;
+                                              newData.returnSegments = [];
+                                          }
                                       }
                                    }
                                    return newData;
@@ -2061,7 +2092,7 @@ export default function CustomersFlights() {
                           e.preventDefault();
                           setActiveTab(activeTab === 'Passenger' ? 'Flight Info' : 'Extra');
                         }}
-                        className="flex-1 py-3 bg-[#101D42] text-white rounded-xl font-semibold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all cursor-pointer"
+                        className="flex-1 py-3 bg-primary text-white rounded-xl font-semibold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all cursor-pointer"
                       >
                         Next
                       </button>

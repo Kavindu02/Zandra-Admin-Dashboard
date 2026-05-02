@@ -252,7 +252,7 @@ export default function ProfitTracker() {
 
               <button 
                 onClick={handleOpenAddModal}
-                className="flex items-center gap-2 bg-[#101D42] text-white px-4 md:px-6 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all"
+                className="flex items-center gap-2 bg-primary text-white px-4 md:px-6 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all"
               >
                 <Plus size={18} />
                 <span>Add Profit</span>
@@ -454,7 +454,7 @@ export default function ProfitTracker() {
                    </div>
 
                    {/* Live Calculation */}
-                   <div className="mt-6 flex items-center justify-between bg-[#101D42] rounded-xl p-4 text-white">
+                   <div className="mt-6 flex items-center justify-between bg-primary rounded-xl p-4 text-white">
                       <div>
                          <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Est. Gross Profit</p>
                          <p className="text-lg font-black tracking-tight">LKR {calculations.gross.toLocaleString()}</p>
@@ -501,7 +501,7 @@ export default function ProfitTracker() {
                 <button 
                   onClick={handleSave} 
                   disabled={isSaving}
-                  className="bg-[#101D42] text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all disabled:opacity-50"
+                  className="bg-primary text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:bg-[#1a2b5a] transition-all disabled:opacity-50"
                 >
                   {isSaving ? 'Processing...' : (selectedRecord ? 'Update Record' : 'Save Record')}
                 </button>

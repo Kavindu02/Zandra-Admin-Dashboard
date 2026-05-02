@@ -101,8 +101,9 @@ export default function Dashboard() {
             
             {user?.role === 'admin' && (
               <>
-                <StatCard icon={<DollarSign size={24}/>} label="Total Income" value={formatCurrency(dashboard.totalIncome)} subText="All time" iconBg="bg-emerald-50 text-emerald-500" />
-                <StatCard icon={<ArrowUpCircle size={24}/>} label="Total Expenses" value={formatCurrency(dashboard.totalExpenses)} subText="All time" iconBg="bg-red-50 text-red-500" />
+                <StatCard icon={<TrendingUp size={24}/>} label="Total Gross Profit" value={formatCurrency(dashboard.totalGrossProfit)} subText="This Year" iconBg="bg-emerald-50 text-emerald-500" />
+                <StatCard icon={<DollarSign size={24}/>} label="Company Share" value={formatCurrency(dashboard.totalCompanyShare)} subText="This Year" iconBg="bg-orange-50 text-orange-500" />
+                <StatCard icon={<ArrowUpCircle size={24}/>} label="Total Expenses" value={formatCurrency(dashboard.totalExpenses)} subText="This Year" iconBg="bg-red-50 text-red-500" />
               </>
             )}
           </div>
@@ -112,7 +113,7 @@ export default function Dashboard() {
               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                  <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Income vs Expenses — {currentYear}</h3>
                  <div className="h-64">
-                   <ResponsiveContainer width="100%" height="100%">
+                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                      <BarChart data={dashboard.monthlyStats}>
                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dy={10} />
@@ -129,7 +130,7 @@ export default function Dashboard() {
               <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                  <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Monthly Profit — {currentYear}</h3>
                  <div className="h-64">
-                   <ResponsiveContainer width="100%" height="100%">
+                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                      <AreaChart data={dashboard.monthlyStats || []}>
                        <defs>
                          <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
@@ -153,7 +154,7 @@ export default function Dashboard() {
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Bookings per Month — {currentYear}</h3>
                <div className="h-64">
-                 <ResponsiveContainer width="100%" height="100%">
+                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                    <BarChart data={dashboard.monthlyStats}>
                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dy={10} />
@@ -169,7 +170,7 @@ export default function Dashboard() {
                <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Top Destinations</h3>
                <div className="h-64 flex items-center justify-center">
                  {dashboard.topDestinations?.length > 0 ? (
-                   <ResponsiveContainer width="100%" height="100%">
+                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                      <PieChart>
                        <Pie
                          data={dashboard.topDestinations}

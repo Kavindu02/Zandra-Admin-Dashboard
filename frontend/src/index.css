@@ -81,12 +81,12 @@ h6 {
     flex-direction: column;
   }
   
-  .bg-[#101D42] {
+  .bg-primary {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  .text-[#F3A91B] {
+  .text-accent {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

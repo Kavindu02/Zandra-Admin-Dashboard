@@ -83,8 +83,10 @@ exports.getDashboardSummary = async () => {
     SELECT 
       SUM(sell) as totalIncome,
       SUM(cost) as totalExpenses,
+      SUM(gross) as totalGrossProfit,
+      SUM(companyShare) as totalCompanyShare,
       COUNT(id) as totalBookings
-    FROM ProfitTracker WHERE isDeleted = 0 AND YEAR(created_at) = ?
+    FROM ProfitTracker WHERE isDeleted = 0 AND isManual = 1 AND YEAR(created_at) = ?
   `, [currentYear]);
 
   // 2. Monthly Stats for Charts
@@ -96,7 +98,7 @@ exports.getDashboardSummary = async () => {
       SUM(gross) as profit,
       COUNT(id) as bookings
     FROM ProfitTracker
-    WHERE isDeleted = 0 AND YEAR(created_at) = ?
+    WHERE isDeleted = 0 AND isManual = 1 AND YEAR(created_at) = ?
     GROUP BY MONTH(created_at)
   `, [currentYear]);
 
@@ -158,6 +160,8 @@ exports.getDashboardSummary = async () => {
     totalBookings: Number(totalsRow?.totalBookings || 0),
     totalIncome: Number(totalsRow?.totalIncome || 0),
     totalExpenses: Number(totalsRow?.totalExpenses || 0),
+    totalGrossProfit: Number(totalsRow?.totalGrossProfit || 0),
+    totalCompanyShare: Number(totalsRow?.totalCompanyShare || 0),
     monthlyStats,
     topDestinations,
     recentPassenger,

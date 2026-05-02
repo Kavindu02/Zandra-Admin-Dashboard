@@ -4,8 +4,8 @@ import { Plus, Trash2, Image as ImageIcon, Map, FileText, Send, Download } from 
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
 import { generateTourPackagePDF } from '../utils/generateTourPackagePDF';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const ImageUploader = ({ imgKey, label, formData, handleImageChange, removeImage }) => (
   <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:border-orange-500/50 transition-colors relative min-h-[160px]">

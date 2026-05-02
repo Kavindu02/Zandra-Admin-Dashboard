@@ -26,7 +26,14 @@ const sendEmailInternal = async (customer, delayInfo = null, customStatus = null
 
   const outbound = (Array.isArray(segments) ? segments : []).filter(s => s && (s.from || s.to));
   const inbound = (Array.isArray(returnSegments) ? returnSegments : []).filter(s => s && (s.from || s.to));
+
+  let firstOut = outbound[0] || {};
+  let lastOut = outbound[outbound.length - 1] || firstOut;
+  let firstIn = inbound[0] || {};
+  let lastIn = inbound[inbound.length - 1] || firstIn;
   
+  const affected = delayInfo?.affectedSegment;
+
   // Extract airport codes
   const getCode = (str) => {
     if (!str) return '---';
@@ -39,27 +46,41 @@ const sendEmailInternal = async (customer, delayInfo = null, customStatus = null
     return str.split(' (')[0] || str;
   };
 
-  // Logic for Origin and Destination
-  let firstOut = outbound[0] || {};
-  let lastOut = outbound[outbound.length - 1] || firstOut;
-  let firstIn = inbound[0] || {};
-  let lastIn = inbound[inbound.length - 1] || firstIn;
+  // Logic for Origin and Destination (Fixing Round Trip title logic)
+  let originCode = getCode(firstOut.from || customer.from);
+  let originName = getName(firstOut.from || customer.from);
+  let destCode = getCode(lastOut.to || customer.to);
+  let destName = getName(lastOut.to || customer.to);
 
-  // Affected Segment Logic for Delays
-  const affected = delayInfo?.affectedSegment;
-  
-  const originCode = affected ? getCode(affected.from) : getCode(firstOut.from || customer.from);
-  const originName = affected ? getName(affected.from) : getName(firstOut.from || customer.from);
-  
-  let destCode = affected ? getCode(affected.to) : getCode(lastOut.to || customer.to);
-  let destName = affected ? getName(affected.to) : getName(lastOut.to || customer.to);
-
-  if (!affected) {
+  if (affected) {
+    originCode = getCode(affected.from);
+    originName = getName(affected.from);
+    destCode = getCode(affected.to);
+    destName = getName(affected.to);
+  } else {
+    // Round Trip logic: If it's a round trip, the destination is the turnaround point.
+    // Case 1: Split into outbound and inbound tables
     const currentLastOutCode = getCode(lastOut.to);
     const currentFirstInCode = getCode(firstIn.from);
-    if (currentLastOutCode === currentFirstInCode && currentLastOutCode !== '---') {
+    
+    if (inbound.length > 0 && currentLastOutCode === currentFirstInCode && currentLastOutCode !== '---') {
       destCode = currentLastOutCode;
       destName = getName(lastOut.to);
+    } 
+    // Case 2: All segments in one table (e.g. from Word import with more than 2 legs)
+    else if (inbound.length === 0 && outbound.length > 1) {
+      const firstCode = getCode(outbound[0].from);
+      const lastCode = getCode(outbound[outbound.length - 1].to);
+      if (firstCode === lastCode && firstCode !== '---') {
+        // It's a round trip in one list. Find the turnaround.
+        for (let i = 0; i < outbound.length - 1; i++) {
+          if (outbound[i].to === outbound[i+1].from && i >= (outbound.length / 2) - 1) {
+            destCode = getCode(outbound[i].to);
+            destName = getName(outbound[i].to);
+            break;
+          }
+        }
+      }
     }
   }
 
@@ -211,6 +232,26 @@ const sendEmailInternal = async (customer, delayInfo = null, customStatus = null
         .info-label { font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 2px; }
         .info-val { font-size: 14px; font-weight: 700; color: #374151; padding-bottom: 20px; }
         
+        .social-footer {
+            padding: 30px 25px;
+            text-align: center;
+            background-color: #ffffff;
+            border-top: 1px solid #f3f4f6;
+        }
+        .social-text {
+            font-size: 11px;
+            font-weight: 800;
+            color: #9ca3af;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .social-icons a {
+            text-decoration: none;
+            margin: 0 10px;
+            display: inline-block;
+        }
+        
         .footer-note { 
             background-color: #f9fafb; 
             padding: 20px 25px; 
@@ -291,6 +332,27 @@ const sendEmailInternal = async (customer, delayInfo = null, customStatus = null
                         </td>
                     </tr>
                 </table>
+            </div>
+
+            <div class="social-footer">
+                <div class="social-text">Follow our Journey</div>
+                <div class="social-icons">
+                    <a href="https://www.facebook.com/share/185X2yqwVK/?mibextid=wwXIfr" target="_blank">
+                        <img src="https://cdn-icons-png.flaticon.com/512/733/733547.png" width="22" height="22" alt="Facebook">
+                    </a>
+                    <a href="https://www.tiktok.com/@zandra.travelers?_r=1&_t=ZS-960DdjFX3xg" target="_blank">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3046/3046121.png" width="22" height="22" alt="TikTok">
+                    </a>
+                    <a href="https://www.linkedin.com/in/zandra-travelers-052415407?utm_source=share_via&utm_content=profile&utm_medium=member_ios" target="_blank">
+                        <img src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png" width="22" height="22" alt="LinkedIn">
+                    </a>
+                    <a href="https://wa.me/818098700622" target="_blank">
+                        <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" width="22" height="22" alt="WhatsApp">
+                    </a>
+                    <a href="http://www.zandratravelers.com" target="_blank">
+                        <img src="https://cdn-icons-png.flaticon.com/512/1006/1006771.png" width="22" height="22" alt="Website">
+                    </a>
+                </div>
             </div>
             
             <div class="footer-note">

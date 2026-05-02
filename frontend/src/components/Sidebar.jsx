@@ -20,13 +20,13 @@ const menuGroups = [
   {
     title: 'OPERATIONS',
     items: [
-      { label: 'Customers & Flights', icon: Plane },
-      { label: 'Tour Packages', icon: Map },
       { label: 'Passengers', icon: Users },
+      { label: 'Customers & Flights', icon: Plane },
       { label: 'Employees', icon: UserCog, adminOnly: true },
       { label: 'Issue Ticket', icon: Ticket },
       { label: 'Invoice Generator', icon: FileText },
       { label: 'Flight Calendar', icon: Calendar },
+      { label: 'Tour Packages', icon: Map },
     ]
   },
   {
@@ -142,7 +142,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="bg-[#101D42] text-gray-400 w-64 fixed left-0 top-0 bottom-0 h-full flex flex-col justify-between shrink-0 z-30">
+    <aside className="bg-primary text-gray-400 w-64 fixed left-0 top-0 bottom-0 h-full flex flex-col justify-between shrink-0 z-30">
       <div 
         ref={scrollRef}
         onScroll={handleScroll}
@@ -182,7 +182,7 @@ export default function Sidebar() {
                       <button
                         className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all text-sm ${
                           activeLabel === item.label
-                            ? 'bg-[#F3A91B] text-[#101D42] font-bold'
+                            ? 'bg-accent text-primary font-bold'
                             : 'hover:bg-[#1e2e5a] hover:text-white'
                         }`}
                         onClick={() => {
@@ -206,7 +206,7 @@ export default function Sidebar() {
       {/* User Footer */}
       <div className="p-4 border-t border-gray-800 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#3d3326] flex items-center justify-center text-[#F3A91B] text-xs font-bold border border-[#F3A91B]/20 uppercase">
+          <div className="w-8 h-8 rounded-full bg-[#3d3326] flex items-center justify-center text-accent text-xs font-bold border border-accent/20 uppercase">
              {user?.username?.[0] || 'U'}
           </div>
           <div>
