@@ -47,3 +47,47 @@ h6 {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0 !important; 
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+  
+  #printable-payslip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 15mm !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    break-inside: avoid;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .bg-[#101D42] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .text-[#F3A91B] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

@@ -81,16 +81,21 @@ export default function ProfitTracker() {
     const sell = Number(formData.sellAmount) || 0;
     const cost = Number(formData.costAmount) || 0;
     const coPercent = Number(formData.companySharePercent) || 0;
-    
-    const initialProfit = Math.max(0, sell - cost);
-    const coCut = (initialProfit * coPercent) / 100;
     const empShare = Number(formData.employeeShareAmount) || 0;
     
-    // Gross is the final remainder after all deductions
-    const gross = Math.max(0, initialProfit - coCut - empShare);
-    const coTotalShare = Math.max(0, initialProfit - empShare);
+    // 1. Sell - Cost
+    const initialProfit = sell - cost;
     
-    return { gross, coShare: coTotalShare, empShare };
+    // 2. Subtract Emp. Share
+    const remainingAfterEmp = initialProfit - empShare;
+    
+    // 3. Company Share calculated from remaining
+    const coShareAmt = (remainingAfterEmp * coPercent) / 100;
+    
+    // 4. Remaining is Est. Gross Profit
+    const gross = remainingAfterEmp - coShareAmt;
+    
+    return { gross, coShare: coShareAmt, empShare };
   }, [formData]);
 
   const handleOpenAddModal = () => {

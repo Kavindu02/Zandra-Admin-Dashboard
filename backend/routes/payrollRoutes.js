@@ -1,15 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const payrollModel = require('../models/payrollModel');
+const { protect } = require('../middleware/authMiddleware');
 
 // Add new payroll record
-router.post('/', async (req, res) => {
+router.post('/', protect, async (req, res) => {
   try {
     const id = await payrollModel.addPayroll(req.body);
     res.status(201).json({ id, message: 'Payroll record saved successfully' });
   } catch (error) {
     console.error('Error saving payroll:', error);
     res.status(500).json({ error: 'Failed to save payroll record' });
+  }
+});
+
+// Get logged in employee's payroll records
+router.get('/my-payroll', protect, async (req, res) => {
+  try {
+    const rows = await payrollModel.getPayrollsByEmployeeId(req.user.id);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching my payroll:', error);
+    res.status(500).json({ error: 'Failed to fetch payroll records' });
   }
 });
 

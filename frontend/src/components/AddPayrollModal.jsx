@@ -51,7 +51,9 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
     const fetchSettings = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        const res = await axios.get(`${apiUrl}/api/settings/payroll`);
+        const res = await axios.get(`${apiUrl}/api/settings/payroll`, {
+          headers: { Authorization: `Bearer ${user?.token}` }
+        });
         setPayrollSettings(res.data);
       } catch (error) {
         console.error('Failed to fetch payroll settings:', error);
@@ -73,7 +75,8 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
             params: {
               employeeId: formData.employeeId,
               month: formData.payrollMonth
-            }
+            },
+            headers: { Authorization: `Bearer ${user?.token}` }
           });
           setFormData(prev => ({ ...prev, employeeShare: res.data.total || 0 }));
         } catch (error) {
@@ -161,13 +164,15 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
         ...calculations
       };
       
+      const headers = { Authorization: `Bearer ${user?.token}` };
+      
       if (record?.id) {
         // Update existing record
-        await axios.put(`${apiUrl}/api/payroll/${record.id}`, payload);
+        await axios.put(`${apiUrl}/api/payroll/${record.id}`, payload, { headers });
         toast.success('Payroll record updated successfully!');
       } else {
         // Save new record
-        await axios.post(`${apiUrl}/api/payroll`, payload);
+        await axios.post(`${apiUrl}/api/payroll`, payload, { headers });
         toast.success('Payroll record saved successfully!');
       }
 

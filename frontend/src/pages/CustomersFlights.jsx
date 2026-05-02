@@ -758,7 +758,7 @@ export default function CustomersFlights() {
       <div className="flex-1 ml-64">
         {/* Top Header Section */}
         <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8">
-          <h2 className="font-semibold text-gray-700">Customers (v2)</h2>
+          <h2 className="font-semibold text-gray-700">Customers</h2>
           <TopHeaderActions />
         </header>
 

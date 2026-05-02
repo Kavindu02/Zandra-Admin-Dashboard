@@ -12,7 +12,7 @@ const toNullableNumber = (value) => {
 const calculateDerivedParts = ({ sell, cost, employeeShareAmount, companySharePercent }) => {
   const sellValue = toNullableNumber(sell);
   const costValue = toNullableNumber(cost);
-  const empShareAmount = toNullableNumber(employeeShareAmount);
+  const empShareAmount = toNullableNumber(employeeShareAmount) || 0;
   const coPercent = toNullableNumber(companySharePercent) || 0;
 
   if (sellValue === null || costValue === null) {
@@ -27,24 +27,25 @@ const calculateDerivedParts = ({ sell, cost, employeeShareAmount, companySharePe
     };
   }
 
-  const initialProfit = Math.max(0, sellValue - costValue);
-  const companyCut = (initialProfit * coPercent) / 100;
-  const employeeCut = empShareAmount || 0;
+  // 1. Sell - Cost
+  const initialProfit = sellValue - costValue;
   
-  // Gross is the final remainder after all deductions
-  const gross = Math.max(0, initialProfit - companyCut - employeeCut);
+  // 2. Subtract Emp. Share
+  const remainingAfterEmp = initialProfit - empShareAmount;
   
-  const employeeShare = employeeCut;
-  // Total company share includes the percentage cut and the final remainder
-  const companyShare = Math.max(0, initialProfit - employeeShare);
+  // 3. Company Share calculated from remaining
+  const coShareAmt = (remainingAfterEmp * coPercent) / 100;
+  
+  // 4. Remaining is Est. Gross Profit
+  const finalProfit = remainingAfterEmp - coShareAmt;
 
   return {
     sell: sellValue,
     cost: costValue,
-    gross,
+    gross: finalProfit,
     employeeShareAmount: empShareAmount,
-    companyShare,
-    employeeShare,
+    companyShare: coShareAmt,
+    employeeShare: empShareAmount,
     companySharePercent: coPercent
   };
 };

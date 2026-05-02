@@ -67,9 +67,18 @@ const deletePayroll = async (id) => {
   await pool.query('DELETE FROM payroll WHERE id = ?', [id]);
 };
 
+const getPayrollsByEmployeeId = async (employeeId) => {
+  const [rows] = await pool.query(
+    'SELECT * FROM payroll WHERE employeeId = ? ORDER BY payrollMonth DESC',
+    [employeeId]
+  );
+  return rows;
+};
+
 module.exports = {
   addPayroll,
   getPayrollsByMonth,
+  getPayrollsByEmployeeId,
   updatePayroll,
   deletePayroll
 };
