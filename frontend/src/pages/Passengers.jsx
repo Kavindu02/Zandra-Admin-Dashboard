@@ -110,7 +110,13 @@ export default function Passengers() {
       <Sidebar />
       
       <main className="flex-1 ml-64 overflow-hidden flex flex-col">
-        <TopHeaderActions />
+        {/* Top Header */}
+        <div className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 sticky top-0 z-20">
+          <div className="flex items-center gap-4">
+            <h2 className="font-bold text-gray-800 uppercase tracking-tighter text-xs">Directory / Passengers</h2>
+          </div>
+          <TopHeaderActions />
+        </div>
         
         <div className="p-8 flex-1 overflow-y-auto">
           {/* Header Section */}

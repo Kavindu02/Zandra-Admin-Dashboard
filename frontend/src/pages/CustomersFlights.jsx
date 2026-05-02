@@ -173,7 +173,8 @@ export default function CustomersFlights() {
   const [sendingEmail, setSendingEmail] = useState(null); // id of customer being emailed
   const [isDelayModalOpen, setIsDelayModalOpen] = useState(false);
   const [delayCustomer, setDelayCustomer] = useState(null);
-  const [delayTimes, setDelayTimes] = useState({ newDepartureTime: '', newArrivalTime: '' });
+  const [isParsing, setIsParsing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch customers and passengers from backend
   useEffect(() => {
@@ -535,9 +536,9 @@ export default function CustomersFlights() {
             const logoImage = await pdfDoc.embedPng(logoBytes);
             page.drawImage(logoImage, {
               x: 35,
-              y: currentY + 33,
-              width: 38,
-              height: 18
+              y: currentY + 24,
+              width: 45,
+              height: 45
             });
           } catch (err) {
              console.warn('Failed to draw logo', err);
@@ -545,9 +546,9 @@ export default function CustomersFlights() {
         }
         
         const airlineLabel = (fl.airline || '').substring(0, 28);
-        page.drawText(airlineLabel, { x: 38, y: currentY + 22, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
+        page.drawText(airlineLabel, { x: 38, y: currentY + 12, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
         if (fl.equipment) {
-          page.drawText(`Equipment: ${fl.equipment}`, { x: 38, y: currentY + 11, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
+          page.drawText(`Equipment: ${fl.equipment}`, { x: 38, y: currentY + 2, size: 8, font, color: rgb(0.18, 0.28, 0.38) });
         }
         
         const origin = parseAirport(fl.from);
@@ -658,24 +659,30 @@ export default function CustomersFlights() {
       adults: Number(formData.adults) || 1
     };
 
+    setIsSubmitting(true);
     if (editId !== null) {
       try {
         await axios.put(`${API_BASE_URL}/api/customersflights/${editId}`, payload);
         toast.success('Customer updated successfully!');
         await fetchCustomers();
+        closeModal();
       } catch (err) {
         toast.error('Failed to update customer');
+      } finally {
+        setIsSubmitting(false);
       }
     } else {
       try {
         await axios.post(`${API_BASE_URL}/api/customersflights`, payload);
         toast.success('Customer added successfully!');
         await fetchCustomers();
+        closeModal();
       } catch (err) {
         toast.error('Failed to add customer');
+      } finally {
+        setIsSubmitting(false);
       }
     }
-    closeModal();
   };
 
   const handleUpdateSubmit = async () => {
@@ -689,6 +696,7 @@ export default function CustomersFlights() {
       adults: Number(formData.adults) || 1
     };
 
+    setIsSubmitting(true);
     try {
       await axios.put(`${API_BASE_URL}/api/customersflights/${editId}`, payload);
       toast.success('Customer updated successfully!');
@@ -696,6 +704,8 @@ export default function CustomersFlights() {
       closeModal();
     } catch (err) {
       toast.error('Failed to update customer');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -741,8 +751,6 @@ export default function CustomersFlights() {
         isOpen={isDelayModalOpen}
         onClose={() => setIsDelayModalOpen(false)}
         customer={delayCustomer}
-        delayTimes={delayTimes}
-        setDelayTimes={setDelayTimes}
         handleSendEmail={handleSendEmail}
         sendingEmail={sendingEmail}
       />
@@ -1227,12 +1235,6 @@ export default function CustomersFlights() {
                         <button
                           onClick={() => {
                             setDelayCustomer(customer);
-                            const first = customer.segments?.[0] || {};
-                            const last = customer.segments?.[customer.segments.length-1] || first;
-                            setDelayTimes({ 
-                              newDepartureTime: first.departureTime || customer.departureTime || '',
-                              newArrivalTime: last.arrivalTime || ''
-                            });
                             setIsDelayModalOpen(true);
                           }}
                           className="flex items-center gap-1 text-orange-600 hover:text-orange-700 font-medium cursor-pointer"
@@ -1396,10 +1398,18 @@ export default function CustomersFlights() {
                           </div>
                           <button 
                             type="button"
+                            disabled={isParsing}
                             onClick={() => fileInputRef.current?.click()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition"
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 ${isParsing ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                           >
-                            Upload File
+                            {isParsing ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Parsing...
+                              </>
+                            ) : (
+                              'Upload File'
+                            )}
                           </button>
                           <input 
                             type="file" 
@@ -1409,6 +1419,7 @@ export default function CustomersFlights() {
                             onChange={async (e) => {
                                const file = e.target.files[0];
                                if (!file) return;
+                               setIsParsing(true);
                                try {
                                  const buffer = await file.arrayBuffer();
                                  const parsedData = await parseTicketFile(buffer);
@@ -1492,8 +1503,10 @@ export default function CustomersFlights() {
                                  } catch (err) {
                                    console.error(err);
                                    toast.error(err.message || 'Failed to parse file.');
+                                 } finally {
+                                   setIsParsing(false);
+                                   e.target.value = ''; 
                                  }
-                               e.target.value = ''; 
                             }}
                           />
                           <button
@@ -2056,9 +2069,21 @@ export default function CustomersFlights() {
                       <button 
                         type="button" 
                         onClick={handleSubmit} 
-                        className="flex-1 py-3 bg-[#F59E0B] text-white rounded-xl font-semibold shadow-lg shadow-orange-500/20 hover:bg-[#d98b06] transition-all cursor-pointer"
+                        disabled={isSubmitting}
+                        className={`flex-1 py-3 text-white rounded-xl font-semibold shadow-lg transition-all flex items-center justify-center gap-2 ${
+                          isSubmitting 
+                            ? 'bg-orange-400 cursor-not-allowed opacity-80' 
+                            : 'bg-[#F59E0B] shadow-orange-500/20 hover:bg-[#d98b06] cursor-pointer'
+                        }`}
                       >
-                        {editId !== null ? 'Update Customer' : 'Add Customer'}
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            {editId !== null ? 'Updating...' : 'Adding...'}
+                          </>
+                        ) : (
+                          editId !== null ? 'Update Customer' : 'Add Customer'
+                        )}
                       </button>
                     )}
                   </div>

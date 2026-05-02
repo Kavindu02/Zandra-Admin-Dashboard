@@ -157,7 +157,7 @@ export default function ProfitTracker() {
   };
 
   const handleExport = () => {
-    const headers = ["Invoice", "Passenger", "Payment Method", "Currency", "Sell", "Cost", "Gross Profit", "Company Share", "Employee Share", "Handled By"];
+    const headers = ["Invoice", "Passenger", "Payment Method", "Sell", "Cost", "Gross Profit", "Company Share", "Employee Share", "Handled By"];
     
     const csvContent = [
       headers.join(','),
@@ -165,7 +165,6 @@ export default function ProfitTracker() {
         row.invoiceNo || '-',
         `"${row.passenger || '-'}"`,
         row.paymentMethod || '-',
-        row.currencies || '-',
         row.sell || 0,
         row.cost || 0,
         row.gross || 0,
@@ -287,7 +286,6 @@ export default function ProfitTracker() {
                       <th className="px-4 md:px-6 py-4">Invoice</th>
                       <th className="px-4 md:px-6 py-4">Passenger</th>
                       <th className="px-4 md:px-6 py-4">Payment</th>
-                      <th className="px-4 md:px-6 py-4">Currencies</th>
                       <th className="px-4 md:px-6 py-4 text-right">Sell</th>
                       <th className="px-4 md:px-6 py-4 text-center">QTY</th>
                       <th className="px-4 md:px-6 py-4 text-right">Cost</th>
@@ -318,7 +316,6 @@ export default function ProfitTracker() {
                               </span>
                             ) : '-'}
                           </td>
-                          <td className="px-4 md:px-6 py-4 text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-tighter whitespace-nowrap">{row.currencies || '-'}</td>
                           <td className="px-4 md:px-6 py-4 text-right font-semibold text-gray-500 text-xs md:text-sm">{Number(row.sell || 0).toLocaleString()}</td>
                           <td className="px-4 md:px-6 py-4 text-center font-bold text-gray-400 text-xs">{row.qty || 1}</td>
                           <td className="px-4 md:px-6 py-4 text-right font-semibold text-gray-500 text-xs md:text-sm">{Number(row.cost || 0).toLocaleString()}</td>

@@ -11,11 +11,12 @@ const menuGroups = [
     title: 'OVERVIEW',
     items: [
       { label: 'Dashboard', icon: LayoutDashboard, active: true },
-      { label: 'Profile', icon: User },
+      { label: 'Profile', icon: User, adminHidden: true },
       { label: 'Notifications', icon: Bell },
       { label: 'Reminders', icon: AlarmClock },
     ]
   },
+// ... (rest of the groups)
   {
     title: 'OPERATIONS',
     items: [
@@ -164,6 +165,7 @@ export default function Sidebar() {
             const visibleItems = group.items.filter(item => {
                if (item.hidden) return false;
                if (item.adminOnly && user?.role !== 'admin') return false;
+               if (item.adminHidden && user?.role === 'admin') return false;
                return true;
             });
             

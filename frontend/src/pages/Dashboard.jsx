@@ -95,52 +95,59 @@ export default function Dashboard() {
             <p className="text-sm font-semibold text-gray-500 mt-1">{getDateLabel()} — Here is what's happening today.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className={`grid grid-cols-1 ${user?.role === 'admin' ? 'md:grid-cols-4' : 'md:grid-cols-2'} gap-6 mb-8`}>
             <StatCard icon={<Users size={24}/>} label="Total Customers" value={dashboard.totalCustomers} iconBg="bg-blue-50 text-blue-500" />
             <StatCard icon={<Ticket size={24}/>} label="Total Bookings" value={dashboard.totalBookings} subText="Booked tickets" iconBg="bg-blue-50/50 text-indigo-500" />
-            <StatCard icon={<DollarSign size={24}/>} label="Total Income" value={formatCurrency(dashboard.totalIncome)} subText="All time" iconBg="bg-emerald-50 text-emerald-500" />
-            <StatCard icon={<ArrowUpCircle size={24}/>} label="Total Expenses" value={formatCurrency(dashboard.totalExpenses)} subText="All time" iconBg="bg-red-50 text-red-500" />
+            
+            {user?.role === 'admin' && (
+              <>
+                <StatCard icon={<DollarSign size={24}/>} label="Total Income" value={formatCurrency(dashboard.totalIncome)} subText="All time" iconBg="bg-emerald-50 text-emerald-500" />
+                <StatCard icon={<ArrowUpCircle size={24}/>} label="Total Expenses" value={formatCurrency(dashboard.totalExpenses)} subText="All time" iconBg="bg-red-50 text-red-500" />
+              </>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
-               <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Income vs Expenses — {currentYear}</h3>
-               <div className="h-64">
-                 <ResponsiveContainer width="100%" height="100%">
-                   <BarChart data={dashboard.monthlyStats}>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
-                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dy={10} />
-                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dx={-10} tickFormatter={(val) => `${val/1000}K`} />
-                     <RechartsTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                     <Legend iconType="circle" wrapperStyle={{fontSize: '12px', fontWeight: 'bold', bottom: -10}} />
-                     <Bar dataKey="income" name="Income" fill="#10B981" radius={[4, 4, 0, 0]} barSize={12} />
-                     <Bar dataKey="expenses" name="Expenses" fill="#F43F5E" radius={[4, 4, 0, 0]} barSize={12} />
-                   </BarChart>
-                 </ResponsiveContainer>
-               </div>
-            </div>
+          {user?.role === 'admin' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+                 <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Income vs Expenses — {currentYear}</h3>
+                 <div className="h-64">
+                   <ResponsiveContainer width="100%" height="100%">
+                     <BarChart data={dashboard.monthlyStats}>
+                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
+                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dy={10} />
+                       <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dx={-10} tickFormatter={(val) => `${val/1000}K`} />
+                       <RechartsTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                       <Legend iconType="circle" wrapperStyle={{fontSize: '12px', fontWeight: 'bold', bottom: -10}} />
+                       <Bar dataKey="income" name="Income" fill="#10B981" radius={[4, 4, 0, 0]} barSize={12} />
+                       <Bar dataKey="expenses" name="Expenses" fill="#F43F5E" radius={[4, 4, 0, 0]} barSize={12} />
+                     </BarChart>
+                   </ResponsiveContainer>
+                 </div>
+              </div>
 
-            <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
-               <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Monthly Profit — {currentYear}</h3>
-               <div className="h-64">
-                 <ResponsiveContainer width="100%" height="100%">
-                   <AreaChart data={dashboard.monthlyStats || []}>
-                     <defs>
-                       <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                         <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2}/>
-                         <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                       </linearGradient>
-                     </defs>
-                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
-                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dy={10} />
-                     <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dx={-10} tickFormatter={(val) => `${val/1000}K`} />
-                     <RechartsTooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                     <Area type="monotone" dataKey="profit" name="Profit" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
-                   </AreaChart>
-                 </ResponsiveContainer>
-               </div>
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+                 <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Monthly Profit — {currentYear}</h3>
+                 <div className="h-64">
+                   <ResponsiveContainer width="100%" height="100%">
+                     <AreaChart data={dashboard.monthlyStats || []}>
+                       <defs>
+                         <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                           <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2}/>
+                           <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                         </linearGradient>
+                       </defs>
+                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB"/>
+                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dy={10} />
+                       <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 11, fontWeight: 'bold'}} dx={-10} tickFormatter={(val) => `${val/1000}K`} />
+                       <RechartsTooltip contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                       <Area type="monotone" dataKey="profit" name="Profit" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorProfit)" />
+                     </AreaChart>
+                   </ResponsiveContainer>
+                 </div>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">

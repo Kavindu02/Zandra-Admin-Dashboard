@@ -193,21 +193,57 @@ export default function FlightCalendar() {
     flightRows.forEach((record, index) => {
       const traveler = pickTravelerName(record);
 
-      // Attempt to get departure date from first segment if available
-      let segmentDepDate = null;
-      if (record.segments) {
-        try {
-          const segs = typeof record.segments === 'string' ? JSON.parse(record.segments) : record.segments;
-          if (Array.isArray(segs) && segs.length > 0 && segs[0].departureDate) {
-            segmentDepDate = parseLocalDate(segs[0].departureDate);
-          }
-        } catch (e) {}
+      const getCode = (str) => {
+        if (!str) return '---';
+        const match = str.match(/\(([^)]+)\)/);
+        return match ? match[1] : String(str).substring(0, 3).toUpperCase();
+      };
+
+      let segs = [];
+      try {
+        if (record.segments) {
+          segs = typeof record.segments === 'string' ? JSON.parse(record.segments) : record.segments;
+        }
+      } catch (e) {}
+      if (!Array.isArray(segs)) segs = [];
+
+      let retSegs = [];
+      try {
+        if (record.returnSegments) {
+          retSegs = typeof record.returnSegments === 'string' ? JSON.parse(record.returnSegments) : record.returnSegments;
+        }
+      } catch (e) {}
+      if (!Array.isArray(retSegs)) retSegs = [];
+
+      // Clean empty segments
+      const outbound = segs.filter(s => s && (s.from || s.to));
+      const inbound = retSegs.filter(s => s && (s.from || s.to));
+
+      let finalOutbound = outbound;
+      let finalInbound = inbound;
+
+      // Logic: If inbound is empty but outbound has multiple segments, try splitting
+      if (finalInbound.length === 0 && finalOutbound.length > 1) {
+        const startCode = getCode(finalOutbound[0].from);
+        const endCode = getCode(finalOutbound[finalOutbound.length - 1].to);
+        const isRoundTripType = record.tripType === 'Round Trip' || record.trip_type === 'Round Trip';
+        
+        if ((startCode === endCode && startCode !== '---') || isRoundTripType) {
+          const mid = Math.floor(finalOutbound.length / 2);
+          finalInbound = finalOutbound.slice(mid);
+          finalOutbound = finalOutbound.slice(0, mid);
+        }
       }
 
-      const departureDay =
-        segmentDepDate ||
-        pickFirstDateFromKeys(record, ['departureDate', 'departure_date', 'outboundDate', 'date']) ||
-        pickFirstDateFromCompositeKeys(record, ['departure', 'outbound']);
+      // 1. Departure Date
+      let departureDay = null;
+      if (finalOutbound.length > 0 && finalOutbound[0].departureDate) {
+        departureDay = parseLocalDate(finalOutbound[0].departureDate);
+      }
+      if (!departureDay) {
+        departureDay = pickFirstDateFromKeys(record, ['departureDate', 'departure_date', 'travelDate', 'date']) ||
+                       pickFirstDateFromCompositeKeys(record, ['departure', 'outbound']);
+      }
 
       if (departureDay) {
         mapped.push({
@@ -218,27 +254,27 @@ export default function FlightCalendar() {
         });
       }
 
-      // Attempt to get return date from first return segment if available
-      let segmentRetDate = null;
-      if (record.returnSegments) {
-        try {
-          const segs = typeof record.returnSegments === 'string' ? JSON.parse(record.returnSegments) : record.returnSegments;
-          if (Array.isArray(segs) && segs.length > 0 && segs[0].departureDate) {
-            segmentRetDate = parseLocalDate(segs[0].departureDate);
-          }
-        } catch (e) {}
+      // 2. Return Date
+      let returnDay = null;
+      // Try first segment of inbound list
+      if (finalInbound.length > 0 && finalInbound[0].departureDate) {
+        returnDay = parseLocalDate(finalInbound[0].departureDate);
+      }
+      
+      // Fallback to explicit returnDate field
+      if (!returnDay) {
+        returnDay = pickFirstDateFromKeys(record, ['returnDate', 'return_date', 'arrivalDate', 'returnDepartureDate']) ||
+                    pickFirstDateFromCompositeKeys(record, ['return', 'arrival', 'inbound']);
       }
 
-      const returnDay =
-        segmentRetDate ||
-        pickFirstDateFromKeys(record, [
-          'returnDate',
-          'return_date',
-          'arrivalDate',
-          'arrival_date',
-          'inboundDate',
-          'returnDepartureDate',
-        ]) || pickFirstDateFromCompositeKeys(record, ['return', 'arrival', 'inbound']);
+      // If still no return date but it is a Round Trip, try taking the very last segment's date as a final guess
+      if (!returnDay && (record.tripType === 'Round Trip' || record.trip_type === 'Round Trip') && finalInbound.length > 0) {
+          // If we split it, finalInbound[0] should have had a date. If not, try any segment in finalInbound.
+          for(const s of finalInbound) {
+              const d = parseLocalDate(s.departureDate || s.arrivalDate);
+              if (d) { returnDay = d; break; }
+          }
+      }
 
       if (returnDay) {
         mapped.push({

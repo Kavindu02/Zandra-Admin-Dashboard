@@ -16,6 +16,7 @@ export default function Payables() {
   const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [monthFilter, setMonthFilter] = useState('All');
 
   const initialFormData = {
     date: new Date().toISOString().split('T')[0],
@@ -95,13 +96,21 @@ export default function Payables() {
     const matchesSearch = p.reason?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           p.category?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'All' || p.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    
+    let matchesMonth = true;
+    if (monthFilter !== 'All') {
+      const payDate = new Date(p.date);
+      const [filterYear, filterMonth] = monthFilter.split('-');
+      matchesMonth = payDate.getFullYear() === parseInt(filterYear) && (payDate.getMonth() + 1) === parseInt(filterMonth);
+    }
+
+    return matchesSearch && matchesCategory && matchesMonth;
   });
 
   const categories = ['All', ...new Set(payables.map(p => p.category))];
 
   const summary = {
-    total: payables.reduce((sum, p) => sum + parseFloat(p.amount), 0),
+    total: filteredPayables.reduce((sum, p) => sum + parseFloat(p.amount), 0),
     thisMonth: payables
       .filter(p => {
         const d = new Date(p.date);
@@ -110,13 +119,28 @@ export default function Payables() {
       })
       .reduce((sum, p) => sum + parseFloat(p.amount), 0),
     topCategory: (() => {
-      if (payables.length === 0) return 'None';
-      const catTotals = payables.reduce((acc, p) => {
+      if (filteredPayables.length === 0) return 'None';
+      const catTotals = filteredPayables.reduce((acc, p) => {
         acc[p.category] = (acc[p.category] || 0) + parseFloat(p.amount);
         return acc;
       }, {});
       return Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0][0];
     })()
+  };
+
+  const getMonthOptions = () => {
+    const options = [{ value: 'All', label: 'All Months' }];
+    const months = [];
+    payables.forEach(p => {
+      const d = new Date(p.date);
+      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+      if (!months.find(m => m.value === val)) {
+        months.push({ value: val, label });
+      }
+    });
+    months.sort((a, b) => b.value.localeCompare(a.value));
+    return [...options, ...months];
   };
 
   return (
@@ -206,7 +230,15 @@ export default function Payables() {
                     <span className="text-sm font-bold text-[#101D42]">Total:</span>
                     <span className="text-sm font-bold text-red-500">LKR {summary.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   </div>
-                  <div className="w-48">
+                  <div className="w-44">
+                    <CustomSelect 
+                      value={monthFilter}
+                      options={getMonthOptions()}
+                      onChange={setMonthFilter}
+                      placeholder="Select Month"
+                    />
+                  </div>
+                  <div className="w-44">
                     <CustomSelect 
                       value={categoryFilter}
                       options={categories}

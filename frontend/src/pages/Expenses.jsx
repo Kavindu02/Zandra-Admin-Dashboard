@@ -17,6 +17,7 @@ export default function Expenses() {
   const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [monthFilter, setMonthFilter] = useState('All');
 
   const initialFormData = {
     date: new Date().toISOString().split('T')[0],
@@ -96,13 +97,21 @@ export default function Expenses() {
     const matchesSearch = exp.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          exp.category?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'All' || exp.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    
+    let matchesMonth = true;
+    if (monthFilter !== 'All') {
+      const expDate = new Date(exp.date);
+      const [filterYear, filterMonth] = monthFilter.split('-'); // e.g. "2026-05"
+      matchesMonth = expDate.getFullYear() === parseInt(filterYear) && (expDate.getMonth() + 1) === parseInt(filterMonth);
+    }
+
+    return matchesSearch && matchesCategory && matchesMonth;
   });
 
   const categories = ['All', ...new Set(expenses.map(e => e.category))];
 
   const summary = {
-    total: expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0),
+    total: filteredExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0),
     thisMonth: expenses
       .filter(e => {
         const d = new Date(e.date);
@@ -111,13 +120,29 @@ export default function Expenses() {
       })
       .reduce((sum, e) => sum + parseFloat(e.amount), 0),
     topCategory: (() => {
-      if (expenses.length === 0) return 'None';
-      const catTotals = expenses.reduce((acc, e) => {
+      if (filteredExpenses.length === 0) return 'None';
+      const catTotals = filteredExpenses.reduce((acc, e) => {
         acc[e.category] = (acc[e.category] || 0) + parseFloat(e.amount);
         return acc;
       }, {});
       return Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0][0];
     })()
+  };
+
+  const getMonthOptions = () => {
+    const options = [{ value: 'All', label: 'All Months' }];
+    const months = [];
+    expenses.forEach(e => {
+      const d = new Date(e.date);
+      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+      if (!months.find(m => m.value === val)) {
+        months.push({ value: val, label });
+      }
+    });
+    // Sort months descending
+    months.sort((a, b) => b.value.localeCompare(a.value));
+    return [...options, ...months];
   };
 
   return (
@@ -207,7 +232,15 @@ export default function Expenses() {
                     <span className="text-sm font-bold text-[#101D42]">Total:</span>
                     <span className="text-sm font-bold text-red-500">LKR {summary.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   </div>
-                  <div className="w-48">
+                  <div className="w-44">
+                    <CustomSelect 
+                      value={monthFilter}
+                      options={getMonthOptions()}
+                      onChange={setMonthFilter}
+                      placeholder="Select Month"
+                    />
+                  </div>
+                  <div className="w-44">
                     <CustomSelect 
                       value={categoryFilter}
                       options={categories}

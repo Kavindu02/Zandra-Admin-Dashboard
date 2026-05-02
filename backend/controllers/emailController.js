@@ -1,6 +1,6 @@
 const nodemailer = require('nodemailer');
 
-const sendEmailInternal = async (customer, delayInfo = null) => {
+const sendEmailInternal = async (customer, delayInfo = null, customStatus = null) => {
   if (!customer || !customer.email) {
     throw new Error('Customer email is required');
   }
@@ -15,12 +15,18 @@ const sendEmailInternal = async (customer, delayInfo = null) => {
     }
   }
 
-  const outbound = (Array.isArray(segments) && segments.length > 0) ? segments : [];
-  
-  // Logic for Origin and Destination
-  const firstSeg = outbound[0] || {};
-  const lastSeg = outbound[outbound.length - 1] || firstSeg;
+  let returnSegments = customer.returnSegments;
+  if (typeof returnSegments === 'string') {
+    try {
+      returnSegments = JSON.parse(returnSegments);
+    } catch (e) {
+      returnSegments = [];
+    }
+  }
 
+  const outbound = (Array.isArray(segments) ? segments : []).filter(s => s && (s.from || s.to));
+  const inbound = (Array.isArray(returnSegments) ? returnSegments : []).filter(s => s && (s.from || s.to));
+  
   // Extract airport codes
   const getCode = (str) => {
     if (!str) return '---';
@@ -33,26 +39,45 @@ const sendEmailInternal = async (customer, delayInfo = null) => {
     return str.split(' (')[0] || str;
   };
 
-  const originCode = getCode(firstSeg.from || customer.from);
-  const destCode = getCode(lastSeg.to || customer.to);
-  const originName = getName(firstSeg.from || customer.from);
-  const destName = getName(lastSeg.to || customer.to);
+  // Logic for Origin and Destination
+  let firstOut = outbound[0] || {};
+  let lastOut = outbound[outbound.length - 1] || firstOut;
+  let firstIn = inbound[0] || {};
+  let lastIn = inbound[inbound.length - 1] || firstIn;
+
+  // Affected Segment Logic for Delays
+  const affected = delayInfo?.affectedSegment;
+  
+  const originCode = affected ? getCode(affected.from) : getCode(firstOut.from || customer.from);
+  const originName = affected ? getName(affected.from) : getName(firstOut.from || customer.from);
+  
+  let destCode = affected ? getCode(affected.to) : getCode(lastOut.to || customer.to);
+  let destName = affected ? getName(affected.to) : getName(lastOut.to || customer.to);
+
+  if (!affected) {
+    const currentLastOutCode = getCode(lastOut.to);
+    const currentFirstInCode = getCode(firstIn.from);
+    if (currentLastOutCode === currentFirstInCode && currentLastOutCode !== '---') {
+      destCode = currentLastOutCode;
+      destName = getName(lastOut.to);
+    }
+  }
 
   // Format date
-  const flightDate = firstSeg.departureDate || customer.departureDate || '';
+  const flightDate = affected ? (affected.departureDate || delayInfo.newDepartureDate) : (firstOut.departureDate || customer.departureDate || '');
   const dateObj = new Date(flightDate);
   const formattedDate = !isNaN(dateObj.getTime()) 
     ? dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'Upcoming Date';
 
-  const originalDepTime = firstSeg.departureTime || customer.departureTime || '--:--';
-  const originalArrTime = lastSeg.arrivalTime || '--:--';
+  const originalDepTime = affected ? (affected.departureTime || '--:--') : (firstOut.departureTime || customer.departureTime || '--:--');
+  const originalArrTime = affected ? (affected.arrivalTime || '--:--') : (lastOut.arrivalTime || '--:--');
   
   const depTime = delayInfo?.newDepartureTime || originalDepTime;
   const arrTime = delayInfo?.newArrivalTime || originalArrTime;
   
-  const airline = firstSeg.airline || customer.airline || 'Airline';
-  const flightNo = firstSeg.flightNo || customer.flightNo || '--';
+  const airline = affected ? (affected.airline || 'Airline') : (firstOut.airline || customer.airline || 'Airline');
+  const flightNo = affected ? (affected.flightNo || '--') : (firstOut.flightNo || customer.flightNo || '--');
   const pnr = customer.pnr || customer.bookingRef || 'N/A';
 
   const html = `
@@ -205,7 +230,7 @@ const sendEmailInternal = async (customer, delayInfo = null) => {
                     <div class="brand-name">ZANDRA<span>TRAVELS</span></div>
                 </div>
                 <div class="header-right">
-                    <div class="status-text">${delayInfo ? 'Flight Update' : 'Ready for Check-in'}</div>
+                    <div class="status-text">${delayInfo ? 'Flight Update' : (customStatus || 'Booking Confirm')}</div>
                 </div>
             </div>
             
@@ -229,7 +254,7 @@ const sendEmailInternal = async (customer, delayInfo = null) => {
                                 </div>
                             </div>
                             <div style="font-size: 10px; font-weight: 700; color: #9ca3af; margin-top: 25px;">
-                                ${firstSeg.duration || 'NON-STOP'}
+                                ${firstOut.duration || 'NON-STOP'}
                             </div>
                         </td>
                         <td width="80" align="right">
@@ -270,6 +295,7 @@ const sendEmailInternal = async (customer, delayInfo = null) => {
             
             <div class="footer-note">
                 Ticket issued by Zandra Travels Administration.<br>
+                Please find your e-ticket PDF attached to this email.<br>
                 Please arrive at the airport 3 hours before departure.
             </div>
         </div>
@@ -292,11 +318,25 @@ const sendEmailInternal = async (customer, delayInfo = null) => {
     ? `🚨 Flight Delay Notification: ${originCode} - ${destCode}`
     : `✈️ Flight Itinerary: ${originName} to ${destName}`;
 
+  // Generate PDF Attachment
+  let attachments = [];
+  try {
+    const { generateTicketPDFBuffer } = require('../utils/ticketPdfGenerator');
+    const pdfBuffer = await generateTicketPDFBuffer(customer);
+    attachments.push({
+      filename: `${customer.passenger || 'Ticket'}_Flight_Itinerary.pdf`,
+      content: pdfBuffer
+    });
+  } catch (pdfErr) {
+    console.error('Failed to generate PDF for attachment:', pdfErr);
+  }
+
   return await transporter.sendMail({
     from: `"Zandra Travels" <${process.env.EMAIL_USER || 'no-reply@zandra.com'}>`,
     to: customer.email,
     subject: subject,
-    html: html
+    html: html,
+    attachments: attachments
   });
 };
 

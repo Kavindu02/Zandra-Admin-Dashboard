@@ -109,10 +109,20 @@ export default function QuickTicketGenerator() {
                newData.segments = [newSegs[0]];
                newData.returnSegments = [newSegs[1]];
            } else {
-               newData.routeType = 'Transit';
-               newData.tripType = 'One Way';
-               newData.segments = newSegs;
-               newData.returnSegments = [];
+               const origin = newSegs[0].from;
+               const destination = newSegs[newSegs.length - 1].to;
+               if (origin === destination && newSegs.length > 2) {
+                   const mid = Math.floor(newSegs.length / 2);
+                   newData.segments = newSegs.slice(0, mid);
+                   newData.returnSegments = newSegs.slice(mid);
+                   newData.tripType = 'Round Trip';
+                   newData.routeType = 'Transit';
+               } else {
+                   newData.routeType = 'Transit';
+                   newData.tripType = 'One Way';
+                   newData.segments = newSegs;
+                   newData.returnSegments = [];
+               }
            }
         }
         return newData;

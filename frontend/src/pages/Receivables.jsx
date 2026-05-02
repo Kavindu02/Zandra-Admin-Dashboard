@@ -16,6 +16,7 @@ export default function Receivables() {
   const [editId, setEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [monthFilter, setMonthFilter] = useState('All');
 
   const initialFormData = {
     date: new Date().toISOString().split('T')[0],
@@ -95,12 +96,35 @@ export default function Receivables() {
     const matchesSearch = rec.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           rec.category?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'All' || rec.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+    
+    let matchesMonth = true;
+    if (monthFilter !== 'All') {
+      const recDate = new Date(rec.date);
+      const [filterYear, filterMonth] = monthFilter.split('-');
+      matchesMonth = recDate.getFullYear() === parseInt(filterYear) && (recDate.getMonth() + 1) === parseInt(filterMonth);
+    }
+
+    return matchesSearch && matchesCategory && matchesMonth;
   });
 
   const categories = ['All', ...new Set(receivables.map(r => r.category))];
 
   const totalAmount = filteredReceivables.reduce((sum, r) => sum + parseFloat(r.amount), 0);
+
+  const getMonthOptions = () => {
+    const options = [{ value: 'All', label: 'All Months' }];
+    const months = [];
+    receivables.forEach(r => {
+      const d = new Date(r.date);
+      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+      if (!months.find(m => m.value === val)) {
+        months.push({ value: val, label });
+      }
+    });
+    months.sort((a, b) => b.value.localeCompare(a.value));
+    return [...options, ...months];
+  };
 
   return (
     <div className="flex min-h-screen bg-[#F3F4F6]">
@@ -189,7 +213,15 @@ export default function Receivables() {
                     <span className="text-sm font-bold text-[#101D42]">Total:</span>
                     <span className="text-sm font-bold text-emerald-500">LKR {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                   </div>
-                  <div className="w-48">
+                  <div className="w-44">
+                    <CustomSelect 
+                      value={monthFilter}
+                      options={getMonthOptions()}
+                      onChange={setMonthFilter}
+                      placeholder="Select Month"
+                    />
+                  </div>
+                  <div className="w-44">
                     <CustomSelect 
                       value={categoryFilter}
                       options={categories}
