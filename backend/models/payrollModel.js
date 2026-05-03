@@ -3,24 +3,26 @@ const pool = require('./db');
 const addPayroll = async (payrollData) => {
   const {
     employeeId, employeeName, payrollMonth, payrollDate,
-    paymentMethod, basicSalary, allowances, overtime,
-    bonuses, manualDeductions, taxDeduction, gross,
-    epfEmp, epfEmpr, etf, totalDeductions,
-    netSalary, paymentStatus, notes
+    employeeShare, paymentStatus, notes
   } = payrollData;
+
+  // Add employeeShare if it doesn't exist in DB (just in case)
+  try {
+    await pool.query('ALTER TABLE payroll ADD COLUMN employeeShare DECIMAL(15,2) DEFAULT 0');
+  } catch (err) {}
 
   const [result] = await pool.query(
     `INSERT INTO payroll (
       employeeId, employeeName, payrollMonth, payrollDate,
       paymentMethod, basicSalary, allowances, overtime,
-      bonuses, manualDeductions, taxDeduction, gross,
+      bonuses, manualDeductions, taxDeduction, employeeShare, gross,
       epfEmp, epfEmpr, etf, totalDeductions,
       netSalary, paymentStatus, notes
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       employeeId, employeeName, payrollMonth, payrollDate,
       paymentMethod, basicSalary, allowances, overtime,
-      bonuses, manualDeductions, taxDeduction, gross,
+      bonuses, manualDeductions, taxDeduction, employeeShare || 0, gross,
       epfEmp, epfEmpr, etf, totalDeductions,
       netSalary, paymentStatus, notes
     ]
@@ -49,14 +51,14 @@ const updatePayroll = async (id, payrollData) => {
     `UPDATE payroll SET 
       employeeId = ?, employeeName = ?, payrollMonth = ?, payrollDate = ?,
       paymentMethod = ?, basicSalary = ?, allowances = ?, overtime = ?,
-      bonuses = ?, manualDeductions = ?, taxDeduction = ?, gross = ?,
+      bonuses = ?, manualDeductions = ?, taxDeduction = ?, employeeShare = ?, gross = ?,
       epfEmp = ?, epfEmpr = ?, etf = ?, totalDeductions = ?,
       netSalary = ?, paymentStatus = ?, notes = ?
     WHERE id = ?`,
     [
       employeeId, employeeName, payrollMonth, payrollDate,
       paymentMethod, basicSalary, allowances, overtime,
-      bonuses, manualDeductions, taxDeduction, gross,
+      bonuses, manualDeductions, taxDeduction, employeeShare || 0, gross,
       epfEmp, epfEmpr, etf, totalDeductions,
       netSalary, paymentStatus, notes, id
     ]

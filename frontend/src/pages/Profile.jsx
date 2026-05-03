@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  User, Phone, Mail, Upload, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp 
+  User, Phone, Mail, Upload, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp, Eye, Download 
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
@@ -112,6 +112,34 @@ export default function Profile() {
       toast.error(err.response?.data?.message || 'Failed to upload files');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const downloadFile = async (filePath) => {
+    if (!filePath) {
+      toast.error("File not found");
+      return;
+    }
+    
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/auth/download-file`, {
+        params: { path: filePath },
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = filePath.split(/[\\/]/).pop();
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Failed to download file');
     }
   };
 
@@ -237,22 +265,46 @@ export default function Profile() {
                   </h3>
                   
                   <div className="space-y-4">
-                    {['cv', 'agreement1', 'agreement2'].map(field => (
-                      <div key={field}>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">
-                          {field === 'cv' ? 'Curriculum Vitae' : field === 'agreement1' ? 'Service Agreement 1' : 'Service Agreement 2'}
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <div className={`flex-1 h-12 bg-gray-50 border border-dashed ${files[field] ? 'border-blue-400 bg-blue-50' : 'border-gray-200'} rounded-xl flex items-center px-4 overflow-hidden`}>
-                            <span className="text-[10px] font-bold text-gray-500 truncate">{files[field] ? files[field].name : 'No file selected'}</span>
+                    {['cv', 'agreement1', 'agreement2'].map(field => {
+                      const dbPath = profile[`${field}_path`];
+                      return (
+                        <div key={field}>
+                          <div className="flex items-center justify-between mb-2 ml-1">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                              {field === 'cv' ? 'Curriculum Vitae' : field === 'agreement1' ? 'Service Agreement 1' : 'Service Agreement 2'}
+                            </label>
+                            {dbPath && (
+                              <span className="flex items-center gap-1 text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full">
+                                <CheckCircle size={10} />
+                                Already Uploaded
+                              </span>
+                            )}
                           </div>
-                          <label className="cursor-pointer h-12 w-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-[#101D42] hover:border-blue-500 transition-all shadow-sm">
-                            <input type="file" className="hidden" accept=".pdf" onChange={e => handleFileChange(e, field)} />
-                            <Upload size={18} />
-                          </label>
+                          <div className="flex items-center gap-2">
+                            <div className={`flex-1 h-12 bg-gray-50 border border-dashed ${files[field] ? 'border-blue-400 bg-blue-50' : dbPath ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200'} rounded-xl flex items-center px-4 overflow-hidden`}>
+                              <span className={`text-[10px] font-bold truncate ${files[field] ? 'text-blue-600' : dbPath ? 'text-emerald-600' : 'text-gray-500'}`}>
+                                {files[field] ? files[field].name : dbPath ? dbPath.split(/[\\/]/).pop() : 'No file selected'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {dbPath && (
+                                <button 
+                                  onClick={() => downloadFile(dbPath)}
+                                  className="h-12 w-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-blue-600 hover:border-blue-500 transition-all shadow-sm"
+                                  title="View Uploaded File"
+                                >
+                                  <Eye size={18} />
+                                </button>
+                              )}
+                              <label className="cursor-pointer h-12 w-12 bg-white border border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-[#101D42] hover:border-blue-500 transition-all shadow-sm">
+                                <input type="file" className="hidden" accept=".pdf" onChange={e => handleFileChange(e, field)} />
+                                <Upload size={18} />
+                              </label>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
 
                     <button 
                       onClick={handleUploadFiles}

@@ -91,32 +91,39 @@ export default function Employees() {
     setFormData(initialFormData);
   };
 
-  const downloadFile = (filePath) => {
+  const downloadFile = async (filePath) => {
     if (!filePath) {
       toast.error("File path not found");
       return;
     }
     
-    // Normalize path: replace backslashes with forward slashes
-    // and ensure it starts with /public if it doesn't already
-    let normalizedPath = filePath.replace(/\\/g, '/');
-    if (!normalizedPath.startsWith('public/') && !normalizedPath.startsWith('/public/')) {
-      normalizedPath = 'public/' + normalizedPath;
+    try {
+      // Use the new secure download endpoint
+      const response = await axios.get(`${API_BASE_URL}/api/auth/download-file`, {
+        params: { path: filePath },
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Extract filename from path
+      const filename = filePath.split(/[\\/]/).pop();
+      link.setAttribute('download', filename);
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Failed to download file. It might not exist on the server.');
     }
-    
-    // Ensure no double slashes at the start of the relative path
-    normalizedPath = normalizedPath.replace(/^\/+/, '');
-    
-    const fileUrl = `${API_BASE_URL}/${normalizedPath}`;
-    
-    // Open in new tab
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.target = '_blank';
-    link.download = ''; // Optional: force download instead of open
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const filteredEmployees = employees.filter(emp => 
@@ -124,6 +131,31 @@ export default function Employees() {
     emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.phone?.includes(searchTerm)
   );
+
+  const handleExport = () => {
+    const headers = ["ID", "Username", "Phone", "Email", "Date Added"];
+    
+    const csvContent = [
+      headers.join(','),
+      ...filteredEmployees.map(emp => [
+        emp.id,
+        `"${emp.username || '-'}"`,
+        `"${emp.phone || '-'}"`,
+        `"${emp.email || '-'}"`,
+        new Date(emp.created_at).toLocaleDateString()
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `employees_report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="flex min-h-screen bg-[#F3F4F6]">
@@ -145,7 +177,10 @@ export default function Employees() {
               <p className="text-sm text-gray-500 mt-1">Manage staff details and view uploaded documents</p>
             </div>
             <div className="flex gap-3">
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+              <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+              >
                 <Download size={18} />
                 Export
               </button>

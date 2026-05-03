@@ -104,22 +104,28 @@ const updateProfile = async (req, res) => {
 const uploadFiles = async (req, res) => {
   const userId = req.user.id;
   const files = req.files;
+  const path = require('path');
   
   try {
     let updateFields = [];
     let values = [];
+    const backendRoot = path.join(__dirname, '..');
     
     if (files.cv) {
       updateFields.push('cv_path = ?');
-      values.push(files.cv[0].path);
+      // Convert to relative path and use forward slashes for DB consistency
+      const relPath = path.relative(backendRoot, files.cv[0].path).replace(/\\/g, '/');
+      values.push(relPath);
     }
     if (files.agreement1) {
       updateFields.push('agreement1_path = ?');
-      values.push(files.agreement1[0].path);
+      const relPath = path.relative(backendRoot, files.agreement1[0].path).replace(/\\/g, '/');
+      values.push(relPath);
     }
     if (files.agreement2) {
       updateFields.push('agreement2_path = ?');
-      values.push(files.agreement2[0].path);
+      const relPath = path.relative(backendRoot, files.agreement2[0].path).replace(/\\/g, '/');
+      values.push(relPath);
     }
     
     if (updateFields.length === 0) {
@@ -134,6 +140,7 @@ const uploadFiles = async (req, res) => {
     
     res.json({ message: 'Files uploaded successfully' });
   } catch (error) {
+    console.error('Upload Error:', error);
     res.status(500).json({ message: 'Server error uploading files', error: error.message });
   }
 };

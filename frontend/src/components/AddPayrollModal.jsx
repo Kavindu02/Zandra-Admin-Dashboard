@@ -11,7 +11,7 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
   const [formData, setFormData] = useState({
     employeeId: '',
     employeeName: '',
-    payrollMonth: '2026-04',
+    payrollMonth: '2026-05',
     payrollDate: new Date().toISOString().split('T')[0],
     paymentMethod: 'Bank Transfer',
     basicSalary: 0,
@@ -85,8 +85,13 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
       }
     };
 
-    if (isOpen && !record) {
-      fetchEmployeeShare();
+    if (isOpen) {
+      // Only auto-fetch if adding new record, 
+      // OR if editing and the employee/month has been changed from original
+      const isChanged = record && (formData.employeeId !== String(record.employeeId) || formData.payrollMonth !== record.payrollMonth);
+      if (!record || isChanged) {
+        fetchEmployeeShare();
+      }
     }
   }, [formData.employeeId, formData.payrollMonth, isOpen, record]);
 
@@ -103,7 +108,7 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
       setFormData({
         employeeId: '',
         employeeName: '',
-        payrollMonth: '2026-04',
+        payrollMonth: '2026-05',
         payrollDate: new Date().toISOString().split('T')[0],
         paymentMethod: 'Bank Transfer',
         basicSalary: 0,
@@ -228,18 +233,13 @@ export default function AddPayrollModal({ isOpen, onClose, record = null }) {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Payroll Month *</label>
               <div className="relative">
-                <select
+                <input
+                  type="month"
                   name="payrollMonth"
                   value={formData.payrollMonth}
                   onChange={handleChange}
-                  className="w-full appearance-none bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                >
-                  <option value="2026-04">2026-04</option>
-                  <option value="2026-03">2026-03</option>
-                  <option value="2026-02">2026-02</option>
-                  <option value="2026-01">2026-01</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
               </div>
             </div>
             <div>

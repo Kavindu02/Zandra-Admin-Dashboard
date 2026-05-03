@@ -12,7 +12,7 @@ import PayrollSettingsModal from '../components/PayrollSettingsModal';
 import { generatePayrollPDF } from '../utils/generatePayrollPDF';
 
 export default function Payroll() {
-  const [selectedMonth, setSelectedMonth] = useState('2026-04');
+  const [selectedMonth, setSelectedMonth] = useState('2026-05');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -130,17 +130,12 @@ export default function Payroll() {
             
             <div className="flex items-center gap-3">
               <div className="relative">
-                <select 
+                <input
+                  type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer shadow-sm pr-10"
-                >
-                  <option value="2026-04">2026-04</option>
-                  <option value="2026-03">2026-03</option>
-                  <option value="2026-02">2026-02</option>
-                  <option value="2026-01">2026-01</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+                  className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer shadow-sm"
+                />
               </div>
 
               <button 
@@ -200,6 +195,7 @@ export default function Payroll() {
                   <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500">
                     <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Employee</th>
                     <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Month</th>
+                    <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Profit Share</th>
                     <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">Gross</th>
                     <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">EPF (Emp)</th>
                     <th className="px-6 py-4 font-bold uppercase tracking-wider text-[10px]">EPF (Empr)</th>
@@ -215,6 +211,7 @@ export default function Payroll() {
                       <tr key={row.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-6 py-4 font-semibold text-gray-700">{row.employeeName}</td>
                         <td className="px-6 py-4 text-gray-500">{row.payrollMonth}</td>
+                        <td className="px-6 py-4 font-medium text-violet-600">LKR {Number(row.employeeShare || 0).toLocaleString()}</td>
                         <td className="px-6 py-4 font-medium text-gray-900">LKR {Number(row.gross).toLocaleString()}</td>
                         <td className="px-6 py-4 text-rose-600 font-medium">{Number(row.epfEmp).toLocaleString()}</td>
                         <td className="px-6 py-4 text-blue-600 font-medium">{Number(row.epfEmpr).toLocaleString()}</td>
