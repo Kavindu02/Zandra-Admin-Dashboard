@@ -12,7 +12,7 @@ const scheduleReminders = () => {
             
             // Query all flights that haven't had a reminder sent yet
             const [flights] = await db.query(
-                'SELECT * FROM CustomersFlights WHERE reminder_sent = FALSE AND departureDate IS NOT NULL'
+                'SELECT * FROM customersflights WHERE reminder_sent = FALSE AND departureDate IS NOT NULL'
             );
 
             for (const flight of flights) {
@@ -34,7 +34,7 @@ const scheduleReminders = () => {
                         
                         // Mark as sent
                         await db.query(
-                            'UPDATE CustomersFlights SET reminder_sent = TRUE WHERE id = ?',
+                            'UPDATE customersflights SET reminder_sent = TRUE WHERE id = ?',
                             [flight.id]
                         );
                         
@@ -59,7 +59,7 @@ const scheduleReminders = () => {
             const todayStr = new Date().toISOString().split('T')[0];
 
             const [flights] = await db.query(
-                'SELECT * FROM CustomersFlights WHERE departureDate = ?',
+                'SELECT * FROM customersflights WHERE departureDate = ?',
                 [tomorrowStr]
             );
 

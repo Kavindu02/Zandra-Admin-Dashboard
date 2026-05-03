@@ -12,7 +12,7 @@ const getCashFlowData = async (year) => {
 
   const [ticketSales] = await pool.query(
     `SELECT MONTH(created_at) as month, SUM(sell) as total 
-     FROM ProfitTracker 
+     FROM profittracker 
      WHERE YEAR(created_at) = ? AND isDeleted = 0
      GROUP BY MONTH(created_at)`,
     [year]
@@ -105,7 +105,7 @@ const getProfitLossData = async (year) => {
       MONTH(created_at) as month, 
       SUM(sell) as income, 
       SUM(cost) as cost 
-     FROM ProfitTracker 
+     FROM profittracker 
      WHERE YEAR(created_at) = ? AND isDeleted = 0
      GROUP BY MONTH(created_at)`,
     [year]

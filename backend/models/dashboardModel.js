@@ -57,17 +57,17 @@ exports.getDashboardSummary = async () => {
   await ensureDashboardSettingsTable();
 
   const settings = await exports.getDashboardSettings();
-  const totalCustomers = await safeScalar('SELECT COUNT(*) AS total FROM CustomersFlights');
-  const todaysFlights = await safeScalar('SELECT COUNT(*) AS total FROM CustomersFlights WHERE departureDate = CURDATE()');
-  const totalInvoices = await safeScalar("SELECT COUNT(*) AS total FROM CustomersFlights WHERE invoiceNo IS NOT NULL AND invoiceNo <> ''");
+  const totalCustomers = await safeScalar('SELECT COUNT(*) AS total FROM customersflights');
+  const todaysFlights = await safeScalar('SELECT COUNT(*) AS total FROM customersflights WHERE departureDate = CURDATE()');
+  const totalInvoices = await safeScalar("SELECT COUNT(*) AS total FROM customersflights WHERE invoiceNo IS NOT NULL AND invoiceNo <> ''");
   const unreadAlerts = await safeScalar('SELECT COUNT(*) AS total FROM notifications WHERE isRead = 0');
   const pendingReminders = await safeScalar("SELECT COUNT(*) AS total FROM notifications WHERE type = 'reminder' AND isRead = 0");
   const flightsIn48h = await safeScalar(
-    "SELECT COUNT(*) AS total FROM CustomersFlights WHERE departureDate IS NOT NULL AND TIMESTAMP(departureDate, IFNULL(NULLIF(departureTime, ''), '00:00:00')) BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 48 HOUR)"
+    "SELECT COUNT(*) AS total FROM customersflights WHERE departureDate IS NOT NULL AND TIMESTAMP(departureDate, IFNULL(NULLIF(departureTime, ''), '00:00:00')) BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 48 HOUR)"
   );
 
   const recentPassenger = await safeRow(
-    "SELECT passenger, invoiceNo, status FROM CustomersFlights ORDER BY id DESC LIMIT 1"
+    "SELECT passenger, invoiceNo, status FROM customersflights ORDER BY id DESC LIMIT 1"
   );
 
   const recentReminder = await safeRow(
@@ -86,7 +86,7 @@ exports.getDashboardSummary = async () => {
       SUM(gross) as totalGrossProfit,
       SUM(companyShare) as totalCompanyShare,
       COUNT(id) as totalBookings
-    FROM ProfitTracker WHERE isDeleted = 0 AND isManual = 1 AND YEAR(created_at) = ?
+    FROM profittracker WHERE isDeleted = 0 AND YEAR(created_at) = ?
   `, [currentYear]);
 
   // 2. Monthly Stats for Charts
@@ -97,8 +97,8 @@ exports.getDashboardSummary = async () => {
       SUM(cost) as expenses,
       SUM(gross) as profit,
       COUNT(id) as bookings
-    FROM ProfitTracker
-    WHERE isDeleted = 0 AND isManual = 1 AND YEAR(created_at) = ?
+    FROM profittracker
+    WHERE isDeleted = 0 AND YEAR(created_at) = ?
     GROUP BY MONTH(created_at)
   `, [currentYear]);
 
@@ -118,30 +118,28 @@ exports.getDashboardSummary = async () => {
   // 3. Top Destinations
   let destRows = [];
   try {
+    // Try with created_at first
     [destRows] = await db.query(`
       SELECT \`to\` as destination, COUNT(*) as count 
-      FROM CustomersFlights 
+      FROM customersflights 
       WHERE \`to\` IS NOT NULL AND \`to\` != '' AND YEAR(created_at) = ?
       GROUP BY \`to\` 
       ORDER BY count DESC 
       LIMIT 5
     `, [currentYear]);
   } catch (err) {
-    if (err.code === 'ER_NO_SUCH_TABLE') {
+    // Fallback to no year filter if created_at is missing or other issue
+    try {
+      [destRows] = await db.query(`
+        SELECT \`to\` as destination, COUNT(*) as count 
+        FROM customersflights 
+        WHERE \`to\` IS NOT NULL AND \`to\` != '' 
+        GROUP BY \`to\` 
+        ORDER BY count DESC 
+        LIMIT 5
+      `);
+    } catch (fallbackErr) {
       destRows = [];
-    } else {
-      try {
-        [destRows] = await db.query(`
-          SELECT \`to\` as destination, COUNT(*) as count 
-          FROM CustomersFlights 
-          WHERE \`to\` IS NOT NULL AND \`to\` != '' 
-          GROUP BY \`to\` 
-          ORDER BY count DESC 
-          LIMIT 5
-        `);
-      } catch (fallbackErr) {
-        destRows = [];
-      }
     }
   }
 

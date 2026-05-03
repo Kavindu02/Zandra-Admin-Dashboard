@@ -62,8 +62,23 @@ const safeAlter = async (sql) => {
 };
 
 const ensureProfitTrackerTable = async () => {
+  // Migration for Linux case-sensitivity
+  try {
+    const [tables] = await db.query("SHOW TABLES LIKE 'ProfitTracker'");
+    if (tables.length > 0) {
+      // Also check if lowercase already exists to avoid "Table already exists" error
+      const [lowerTables] = await db.query("SHOW TABLES LIKE 'profittracker'");
+      if (lowerTables.length === 0) {
+        console.log('Renaming ProfitTracker to profittracker for Linux compatibility...');
+        await db.query("RENAME TABLE ProfitTracker TO profittracker");
+      }
+    }
+  } catch (err) {
+    console.error('Migration error (renaming):', err.message);
+  }
+
   await db.query(
-    `CREATE TABLE IF NOT EXISTS ProfitTracker (
+    `CREATE TABLE IF NOT EXISTS profittracker (
       id INT PRIMARY KEY AUTO_INCREMENT,
       customerFlightId INT NULL,
       invoiceNo VARCHAR(120) NOT NULL,
@@ -93,17 +108,17 @@ const ensureProfitTrackerTable = async () => {
     )`
   );
 
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN sellCurrency VARCHAR(30) NULL');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN costCurrency VARCHAR(30) NULL');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN exchangeRate DECIMAL(12,4) NULL');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN companySharePercent DECIMAL(6,2) NULL');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN employeeSharePercent DECIMAL(6,2) NULL');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN employeeShareAmount DECIMAL(15,2) DEFAULT 0');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN isManual TINYINT(1) DEFAULT 0');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN isDeleted TINYINT(1) DEFAULT 0');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN currencies VARCHAR(120) NULL');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN qty INT DEFAULT 1');
-  await safeAlter('ALTER TABLE ProfitTracker ADD COLUMN employeeId INT NULL');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN sellCurrency VARCHAR(30) NULL');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN costCurrency VARCHAR(30) NULL');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN exchangeRate DECIMAL(12,4) NULL');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN companySharePercent DECIMAL(6,2) NULL');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN employeeSharePercent DECIMAL(6,2) NULL');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN employeeShareAmount DECIMAL(15,2) DEFAULT 0');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN isManual TINYINT(1) DEFAULT 0');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN isDeleted TINYINT(1) DEFAULT 0');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN currencies VARCHAR(120) NULL');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN qty INT DEFAULT 1');
+  await safeAlter('ALTER TABLE profittracker ADD COLUMN employeeId INT NULL');
 };
 
 const buildSummary = (records) => {
@@ -126,8 +141,8 @@ exports.getProfitTrackerData = async () => {
   await ensureProfitTrackerTable();
   // syncFromCustomersFlights() call removed to avoid cluttering with non-invoiced records
 
-  // Only show records that are manually marked (created by Invoice Generator or manually added)
-  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE isDeleted = 0 AND isManual = 1 ORDER BY id DESC');
+  // Show all records (both manual and automatic) that are not deleted
+  const [rows] = await db.query('SELECT * FROM profittracker WHERE isDeleted = 0 ORDER BY id DESC');
   const summary = buildSummary(rows);
 
   return {
@@ -140,7 +155,7 @@ exports.getProfitTrackerData = async () => {
 exports.updateProfitRecord = async (id, data) => {
   await ensureProfitTrackerTable();
 
-  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE id = ?', [id]);
+  const [rows] = await db.query('SELECT * FROM profittracker WHERE id = ?', [id]);
   const existing = rows[0];
   if (!existing) {
     return null;
@@ -167,7 +182,7 @@ exports.updateProfitRecord = async (id, data) => {
   });
 
   await db.query(
-    `UPDATE ProfitTracker
+    `UPDATE profittracker
      SET paymentMethod = ?,
          sellCurrency = ?,
          costCurrency = ?,
@@ -208,31 +223,31 @@ exports.updateProfitRecord = async (id, data) => {
     ]
   );
 
-  const [updatedRows] = await db.query('SELECT * FROM ProfitTracker WHERE id = ?', [id]);
+  const [updatedRows] = await db.query('SELECT * FROM profittracker WHERE id = ?', [id]);
   return updatedRows[0];
 };
 
 exports.deleteProfitRecord = async (id) => {
   await ensureProfitTrackerTable();
-  await db.query('UPDATE ProfitTracker SET isDeleted = 1 WHERE id = ?', [id]);
+  await db.query('UPDATE profittracker SET isDeleted = 1 WHERE id = ?', [id]);
 };
 
 exports.getProfitByCustomerFlightId = async (customerFlightId) => {
   await ensureProfitTrackerTable();
-  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE customerFlightId = ?', [customerFlightId]);
+  const [rows] = await db.query('SELECT * FROM profittracker WHERE customerFlightId = ?', [customerFlightId]);
   return rows[0];
 };
 
 exports.getProfitByInvoiceNo = async (invoiceNo) => {
   await ensureProfitTrackerTable();
-  const [rows] = await db.query('SELECT * FROM ProfitTracker WHERE invoiceNo = ? AND isDeleted = 0 ORDER BY id DESC LIMIT 1', [invoiceNo]);
+  const [rows] = await db.query('SELECT * FROM profittracker WHERE invoiceNo = ? AND isDeleted = 0 ORDER BY id DESC LIMIT 1', [invoiceNo]);
   return rows[0];
 };
 
 exports.updateStatusByInvoiceNo = async (invoiceNo, status) => {
   await ensureProfitTrackerTable();
   await db.query(
-    'UPDATE ProfitTracker SET status = ? WHERE invoiceNo = ? AND isDeleted = 0',
+    'UPDATE profittracker SET status = ? WHERE invoiceNo = ? AND isDeleted = 0',
     [status, invoiceNo]
   );
 };
@@ -254,7 +269,7 @@ exports.createProfitRecord = async (data) => {
   });
 
   const [result] = await db.query(
-    `INSERT INTO ProfitTracker (
+    `INSERT INTO profittracker (
       invoiceNo, passenger, paymentMethod, sellCurrency, costCurrency, 
       exchangeRate, currencies, sell, cost, gross, 
       employeeShareAmount, companyShare, employeeShare, 
@@ -283,14 +298,14 @@ exports.createProfitRecord = async (data) => {
     ]
   );
 
-  const [newRows] = await db.query('SELECT * FROM ProfitTracker WHERE id = ?', [result.insertId]);
+  const [newRows] = await db.query('SELECT * FROM profittracker WHERE id = ?', [result.insertId]);
   return newRows[0];
 };
 
 exports.recalculateAllRecords = async () => {
   await ensureProfitTrackerTable();
   const [rows] = await db.query(
-    'SELECT id, sell, cost, companySharePercent, employeeSharePercent FROM ProfitTracker WHERE isDeleted = 0 AND isManual = 1'
+    'SELECT id, sell, cost, companySharePercent, employeeSharePercent FROM profittracker WHERE isDeleted = 0 AND isManual = 1'
   );
 
   for (const row of rows) {
@@ -302,7 +317,7 @@ exports.recalculateAllRecords = async () => {
     });
 
     await db.query(
-      `UPDATE ProfitTracker
+      `UPDATE profittracker
        SET gross = ?, companyShare = ?, employeeShare = ?, companySharePercent = ?
        WHERE id = ?`,
       [parts.gross, parts.companyShare, parts.employeeShare, parts.companySharePercent, row.id]
@@ -313,7 +328,7 @@ exports.recalculateAllRecords = async () => {
 exports.getEmployeeSharesTotal = async (employeeId, month) => {
   const [rows] = await db.query(
     `SELECT SUM(employeeShare) as total 
-     FROM ProfitTracker 
+     FROM profittracker 
      WHERE employeeId = ? 
      AND isDeleted = 0 
      AND DATE_FORMAT(created_at, '%Y-%m') = ?`,

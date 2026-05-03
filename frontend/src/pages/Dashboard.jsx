@@ -168,9 +168,9 @@ export default function Dashboard() {
 
             <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                <h3 className="text-sm font-black text-[#1F2B3F] mb-6 tracking-tight">Top Destinations</h3>
-               <div className="h-64 flex items-center justify-center">
-                 {dashboard.topDestinations?.length > 0 ? (
-                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <div className="h-[250px] flex items-center justify-center">
+                  {dashboard.topDestinations?.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={250}>
                      <PieChart>
                        <Pie
                          data={dashboard.topDestinations}

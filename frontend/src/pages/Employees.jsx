@@ -91,12 +91,32 @@ export default function Employees() {
     setFormData(initialFormData);
   };
 
-  const downloadFile = (path, fileName) => {
-    if (!path) return;
-    // The path is like "public\CV\username_cv_..." on Windows or "public/CV/..." on Linux
-    // We need to serve it via the backend URL
-    const fileUrl = `${API_BASE_URL}/${path.replace(/\\/g, '/')}`;
-    window.open(fileUrl, '_blank');
+  const downloadFile = (filePath) => {
+    if (!filePath) {
+      toast.error("File path not found");
+      return;
+    }
+    
+    // Normalize path: replace backslashes with forward slashes
+    // and ensure it starts with /public if it doesn't already
+    let normalizedPath = filePath.replace(/\\/g, '/');
+    if (!normalizedPath.startsWith('public/') && !normalizedPath.startsWith('/public/')) {
+      normalizedPath = 'public/' + normalizedPath;
+    }
+    
+    // Ensure no double slashes at the start of the relative path
+    normalizedPath = normalizedPath.replace(/^\/+/, '');
+    
+    const fileUrl = `${API_BASE_URL}/${normalizedPath}`;
+    
+    // Open in new tab
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.target = '_blank';
+    link.download = ''; // Optional: force download instead of open
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const filteredEmployees = employees.filter(emp => 

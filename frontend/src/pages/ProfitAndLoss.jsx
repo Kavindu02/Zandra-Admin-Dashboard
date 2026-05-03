@@ -4,6 +4,7 @@ import { FileText, ChevronDown, TrendingUp, ShoppingBag, CreditCard, DollarSign 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
+import { generateProfitLossPDF } from '../utils/generateProfitLossPDF';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -77,7 +78,10 @@ export default function ProfitAndLoss() {
               <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Income statement and financial performance</p>
             </div>
             
-            <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 transition shadow-sm">
+            <button 
+              onClick={() => data && generateProfitLossPDF(data, year)}
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 transition shadow-sm"
+            >
               <FileText size={16} />
               <span>PDF Report</span>
             </button>

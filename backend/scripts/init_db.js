@@ -88,20 +88,20 @@ async function init() {
   await connection.query(createEmployeesTableQuery);
   console.log('Table "employees" checked/created.');
 
-  // Optional: Update CustomersFlights to include passenger_id if not exists
+  // Optional: Update customersflights to include passenger_id if not exists
   const addColumnQuery = `
-    ALTER TABLE CustomersFlights 
+    ALTER TABLE customersflights 
     ADD COLUMN IF NOT EXISTS passenger_id INT AFTER id;
   `;
   
   try {
     await connection.query(addColumnQuery);
-    console.log('Column "passenger_id" added to CustomersFlights (if not existed).');
+    console.log('Column "passenger_id" added to customersflights (if not existed).');
   } catch (err) {
     // If ADD COLUMN IF NOT EXISTS is not supported (MySQL < 8.0.19)
     console.log('Attempting to add column manually...');
     try {
-      await connection.query('ALTER TABLE CustomersFlights ADD COLUMN passenger_id INT AFTER id');
+      await connection.query('ALTER TABLE customersflights ADD COLUMN passenger_id INT AFTER id');
     } catch (e) {
       console.log('Column might already exist.');
     }

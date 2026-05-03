@@ -414,7 +414,114 @@ const sendItineraryEmail = async (req, res) => {
   }
 };
 
+const sendInvoiceEmail = async (req, res) => {
+  const { invoiceId } = req.body;
+  const pool = require('../models/db');
+  
+  try {
+    // 1. Fetch Invoice
+    const [invRows] = await pool.query('SELECT * FROM invoices WHERE id = ?', [invoiceId]);
+    const invoice = invRows[0];
+    if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+    if (invoice.email_sent) return res.status(400).json({ error: 'Email already sent for this status' });
+
+    // 2. Find Customer Email
+    let flightIds = [];
+    try {
+      flightIds = JSON.parse(invoice.customerFlightIds || '[]');
+    } catch (e) {
+      flightIds = [];
+    }
+
+    if (flightIds.length === 0) {
+      console.log('No flight IDs found in invoice:', invoice.invoiceNo);
+      return res.status(400).json({ error: 'No flight associated with this invoice' });
+    }
+
+    const [flightRows] = await pool.query('SELECT email, passenger FROM customersflights WHERE id = ?', [flightIds[0]]);
+    const flight = flightRows[0];
+    if (!flight) {
+      console.log('Flight record not found for ID:', flightIds[0]);
+      return res.status(400).json({ error: 'Customer flight record not found in database' });
+    }
+    if (!flight.email) {
+      console.log('Email is empty for flight ID:', flightIds[0]);
+      return res.status(400).json({ error: 'Customer email is empty in flight record' });
+    }
+
+    // 3. Generate PDF
+    const showBankInfo = invoice.status !== 'Approve';
+    console.log(`Generating PDF for invoice: ${invoice.invoiceNo} (Show Bank Info: ${showBankInfo})`);
+    const { generateInvoicePDFBuffer } = require('../utils/invoicePdfGenerator');
+    const pdfBuffer = await generateInvoicePDFBuffer(invoice, showBankInfo);
+    console.log('PDF generated successfully, size:', pdfBuffer.length);
+
+    // 4. Send Email
+    console.log('Sending email to:', flight.email);
+    const transporter = nodemailer.createTransport({
+      host: process.env.EMAIL_HOST || 'smtp.ethereal.email',
+      port: process.env.EMAIL_PORT || 587,
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #101D42; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+        <div style="background: #101D42; padding: 20px; color: #fff; text-align: center;">
+          <h1 style="margin: 0; font-size: 20px;">INVOICE RECEIVED</h1>
+        </div>
+        <div style="padding: 30px;">
+          <p>Dear <strong>${invoice.billToName || flight.passenger}</strong>,</p>
+          <p>Please find the attached invoice <strong>#${invoice.invoiceNo}</strong> for your travel booking with Zandra Travelers.</p>
+          <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+            <p style="margin: 0 0 10px 0;"><strong>Invoice Summary:</strong></p>
+            <p style="margin: 5px 0;">Invoice No: ${invoice.invoiceNo}</p>
+            <p style="margin: 5px 0;">Amount: LKR ${Number(invoice.amount).toLocaleString()}</p>
+          </div>
+          <p>If you have any questions, please feel free to contact us.</p>
+          <p>Best Regards,<br><strong>Zandra Travelers Team</strong></p>
+        </div>
+        <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 11px; color: #777;">
+          This is an automated email. Please do not reply directly to this message.
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"Zandra Travelers" <${process.env.EMAIL_USER || 'no-reply@zandra.com'}>`,
+      to: flight.email,
+      subject: `Invoice from Zandra Travelers: ${invoice.invoiceNo}`,
+      html: html,
+      attachments: [
+        {
+          filename: `Invoice_${invoice.invoiceNo}.pdf`,
+          content: pdfBuffer
+        }
+      ]
+    });
+
+    // 5. Update Status
+    await pool.query('UPDATE invoices SET email_sent = TRUE WHERE id = ?', [invoiceId]);
+
+    res.json({ message: 'Invoice email sent successfully' });
+  } catch (error) {
+    console.error('CRITICAL: Invoice Email Error Details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code
+    });
+    res.status(500).json({ 
+      error: 'Server Error: ' + (error.message || 'Failed to send invoice email'),
+      details: error.code || 'NO_CODE'
+    });
+  }
+};
+
 module.exports = {
   sendItineraryEmail,
-  sendEmailInternal
+  sendEmailInternal,
+  sendInvoiceEmail
 };

@@ -8,7 +8,7 @@ const axios = require('axios');
  */
 const generateTicketPDFBuffer = async (customer) => {
   try {
-    const templatePath = path.join(__dirname, '../../frontend/public/template.pdf');
+    const templatePath = path.join(__dirname, '../assets/template.pdf');
     const existingPdfBytes = fs.readFileSync(templatePath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);

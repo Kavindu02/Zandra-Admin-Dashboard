@@ -154,13 +154,11 @@ exports.updateStatus = async (req, res) => {
     await invoiceModel.updateInvoiceStatus(id, status, amount, qty);
     
     // Also update customers' invoiceStatus
-    if (status === 'Approve') {
-        const inv = await invoiceModel.getInvoiceById(id);
-        if (inv && inv.customerFlightIds) {
-            const ids = typeof inv.customerFlightIds === 'string' ? JSON.parse(inv.customerFlightIds) : inv.customerFlightIds;
-            for (const cid of ids) {
-                await customerFlightModel.updateInvoiceStatus(cid, 'Approve');
-            }
+    const inv = await invoiceModel.getInvoiceById(id);
+    if (inv && inv.customerFlightIds) {
+        const ids = typeof inv.customerFlightIds === 'string' ? JSON.parse(inv.customerFlightIds) : inv.customerFlightIds;
+        for (const cid of ids) {
+            await customerFlightModel.updateInvoiceStatus(cid, status);
         }
     }
 

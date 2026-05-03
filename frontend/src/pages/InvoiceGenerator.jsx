@@ -9,7 +9,10 @@ import {
   Clock, 
   Search,
   Filter,
-  Check
+  Check,
+  Mail,
+  Send,
+  Loader2
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import TopHeaderActions from '../components/TopHeaderActions';
@@ -22,6 +25,7 @@ const InvoiceManager = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Pending');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sendingEmailId, setSendingEmailId] = useState(null);
 
   const fetchInvoices = async () => {
     try {
@@ -46,6 +50,20 @@ const InvoiceManager = () => {
       fetchInvoices();
     } catch (err) {
       toast.error('Failed to update status');
+    }
+  };
+
+  const handleSendEmail = async (id) => {
+    try {
+      setSendingEmailId(id);
+      const res = await axios.post(`${API_BASE_URL}/api/email/send-invoice`, { invoiceId: id });
+      toast.success(res.data.message || 'Email sent successfully');
+      fetchInvoices();
+    } catch (err) {
+      console.error('Email error:', err);
+      toast.error(err.response?.data?.error || 'Failed to send email');
+    } finally {
+      setSendingEmailId(null);
     }
   };
 
@@ -182,6 +200,26 @@ const InvoiceManager = () => {
                             >
                               <Download size={18} />
                             </button>
+                            <button 
+                              onClick={() => handleSendEmail(inv.id)}
+                              disabled={inv.email_sent || sendingEmailId === inv.id}
+                              className={`p-2 transition rounded-lg ${
+                                inv.email_sent 
+                                  ? 'text-gray-300 cursor-not-allowed' 
+                                  : sendingEmailId === inv.id
+                                    ? 'text-orange-400 bg-orange-50'
+                                    : 'text-orange-500 hover:bg-orange-50'
+                              }`}
+                              title={inv.email_sent ? 'Email Sent' : 'Send to Customer Email'}
+                            >
+                              {inv.email_sent ? (
+                                <Check size={18} />
+                              ) : sendingEmailId === inv.id ? (
+                                <Loader2 size={18} className="animate-spin" />
+                              ) : (
+                                <Mail size={18} />
+                              )}
+                            </button>
                             {inv.status === 'Pending' && (
                               <button 
                                 onClick={() => handleUpdateStatus(inv.id, 'Approve')}
@@ -189,6 +227,15 @@ const InvoiceManager = () => {
                                 title="Approve"
                               >
                                 <CheckCircle size={18} />
+                              </button>
+                            )}
+                            {inv.status === 'Approve' && (
+                              <button 
+                                onClick={() => handleUpdateStatus(inv.id, 'Pending')}
+                                className="p-2 text-orange-400 hover:bg-orange-50 rounded-lg transition"
+                                title="Move to Pending"
+                              >
+                                <Clock size={18} />
                               </button>
                             )}
                             <button 

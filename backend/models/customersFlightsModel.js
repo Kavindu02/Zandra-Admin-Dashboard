@@ -1,6 +1,21 @@
 const db = require('./db');
 
 const ensureTableExists = async () => {
+  // Migration for Linux case-sensitivity
+  try {
+    const [tables] = await db.query("SHOW TABLES LIKE 'CustomersFlights'");
+    if (tables.length > 0) {
+      // Also check if lowercase already exists to avoid "Table already exists" error
+      const [lowerTables] = await db.query("SHOW TABLES LIKE 'customersflights'");
+      if (lowerTables.length === 0) {
+        console.log('Renaming CustomersFlights to customersflights for Linux compatibility...');
+        await db.query("RENAME TABLE CustomersFlights TO customersflights");
+      }
+    }
+  } catch (err) {
+    console.error('Migration error (renaming):', err.message);
+  }
+
   await db.query(`
     CREATE TABLE IF NOT EXISTS passengers (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -13,7 +28,7 @@ const ensureTableExists = async () => {
   `);
 
   await db.query(`
-    CREATE TABLE IF NOT EXISTS CustomersFlights (
+    CREATE TABLE IF NOT EXISTS customersflights (
       id int(11) NOT NULL AUTO_INCREMENT,
       passenger_id int(11) DEFAULT NULL,
       passenger varchar(100) DEFAULT NULL,
@@ -54,9 +69,18 @@ const ensureTableExists = async () => {
       travelDate date DEFAULT NULL,
       destination varchar(255) DEFAULT NULL,
       invoiceStatus enum('Pending','Approve') DEFAULT 'Pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
   `);
+
+  // Ensure columns exist for existing tables
+  const safeAlter = async (sql) => {
+    try { await db.query(sql); } catch (e) {}
+  };
+  await safeAlter('ALTER TABLE customersflights ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+  await safeAlter('ALTER TABLE customersflights ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
 };
 
 exports.getAllCustomersFlights = async () => {
@@ -67,7 +91,7 @@ exports.getAllCustomersFlights = async () => {
            COALESCE(p.passport, cf.passport) as passport, 
            COALESCE(p.email, cf.email) as email, 
            COALESCE(p.phone, cf.phone) as phone
-    FROM CustomersFlights cf
+    FROM customersflights cf
     LEFT JOIN passengers p ON cf.passenger_id = p.id
     ORDER BY cf.id DESC
   `);
@@ -76,14 +100,14 @@ exports.getAllCustomersFlights = async () => {
 
 exports.getCustomerFlightById = async (id) => {
   await ensureTableExists();
-  const [rows] = await db.query('SELECT * FROM CustomersFlights WHERE id = ?', [id]);
+  const [rows] = await db.query('SELECT * FROM customersflights WHERE id = ?', [id]);
   return rows[0];
 };
 
 exports.addCustomerFlight = async (data) => {
   await ensureTableExists();
   const [result] = await db.query(
-    'INSERT INTO CustomersFlights (passenger_id, passenger, passport, email, phone, invoiceNo, ticketNo, issuedDate, bookingRef, pnr, airlineRef, status, baggage, fareBasis, tripType, routeType, `from`, `to`, departureDate, departureTime, returnDate, returnTime, transitAirport, transitTime, outboundSecondFlightNo, returnSecondFlightNo, airline, airlineLogo, flightNo, class, adults, handledBy, employeeId, notes, segments, returnSegments, travelDate, destination, invoiceStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO customersflights (passenger_id, passenger, passport, email, phone, invoiceNo, ticketNo, issuedDate, bookingRef, pnr, airlineRef, status, baggage, fareBasis, tripType, routeType, `from`, `to`, departureDate, departureTime, returnDate, returnTime, transitAirport, transitTime, outboundSecondFlightNo, returnSecondFlightNo, airline, airlineLogo, flightNo, class, adults, handledBy, employeeId, notes, segments, returnSegments, travelDate, destination, invoiceStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       data.passenger_id || null,
       data.passenger,
@@ -130,13 +154,13 @@ exports.addCustomerFlight = async (data) => {
 };
 
 exports.deleteCustomerFlight = async (id) => {
-  await db.query('DELETE FROM CustomersFlights WHERE id = ?', [id]);
+  await db.query('DELETE FROM customersflights WHERE id = ?', [id]);
 };
 
 
 exports.updateCustomerFlight = async (id, data) => {
   await db.query(
-    'UPDATE CustomersFlights SET passenger_id=?, passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, issuedDate=?, bookingRef=?, pnr=?, airlineRef=?, status=?, baggage=?, fareBasis=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, returnDate=?, returnTime=?, transitAirport=?, transitTime=?, outboundSecondFlightNo=?, returnSecondFlightNo=?, airline=?, airlineLogo=?, flightNo=?, class=?, adults=?, handledBy=?, employeeId=?, notes=?, segments=?, returnSegments=?, travelDate=?, destination=?, invoiceStatus=? WHERE id=?',
+    'UPDATE customersflights SET passenger_id=?, passenger=?, passport=?, email=?, phone=?, invoiceNo=?, ticketNo=?, issuedDate=?, bookingRef=?, pnr=?, airlineRef=?, status=?, baggage=?, fareBasis=?, tripType=?, routeType=?, `from`=?, `to`=?, departureDate=?, departureTime=?, returnDate=?, returnTime=?, transitAirport=?, transitTime=?, outboundSecondFlightNo=?, returnSecondFlightNo=?, airline=?, airlineLogo=?, flightNo=?, class=?, adults=?, handledBy=?, employeeId=?, notes=?, segments=?, returnSegments=?, travelDate=?, destination=?, invoiceStatus=? WHERE id=?',
     [
       data.passenger_id || null,
       data.passenger,
@@ -184,5 +208,5 @@ exports.updateCustomerFlight = async (id, data) => {
 };
 exports.updateInvoiceStatus = async (id, status) => {
   await ensureTableExists();
-  await db.query('UPDATE CustomersFlights SET invoiceStatus = ? WHERE id = ?', [status, id]);
+  await db.query('UPDATE customersflights SET invoiceStatus = ? WHERE id = ?', [status, id]);
 };
